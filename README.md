@@ -5,7 +5,7 @@ Keep all the files for AnanCapital
 
 **Structure**
 
-AnanCapital/
+<!-- #AnanCapital/
 │
 ├── InvestmentLabR/
 │   ├── DataManagment/
@@ -22,7 +22,7 @@ AnanCapital/
 │   ├── Technical Indicators/
 │   ├── Fundamental Indicators/
 │   └── Sentiment Analysis/
-| 
+|  -->
 
 
 
