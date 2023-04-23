@@ -1,28 +1,16 @@
 # AnanCapital
 
-:Keep all the files for AnanCapital
-
-Program Name: Automated Trading System
-
-Purpose:
+**Purpose:** 
 Keep all the files for AnanCapital
-
-
-Folder:
-1. InvestmentLab
-2. Operation
-3. BackTesting
-4. Research
-
 
 **Structure**
 
 AnanCapital/
 │
-├── R/
-│   ├── /
-│   ├── Processed Data/
-│   ├── Data Cleaning/
+├── InvestmentLabR/
+│   ├── DataManagment/
+│   ├── Indicator/
+│   ├── S/
 │   └── Data Visualization/
 │
 ├── Python/
@@ -30,6 +18,16 @@ AnanCapital/
 │   ├── Fundamental Indicators/
 │   └── Sentiment Analysis/
 │
+├── Strategy/
+│   ├── Technical Indicators/
+│   ├── Fundamental Indicators/
+│   └── Sentiment Analysis/
+| 
+
+
+
+Data Indicator Backtesting stra report operation research project
+
 
 
 
