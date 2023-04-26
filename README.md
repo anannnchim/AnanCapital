@@ -12,7 +12,7 @@ Repository: AnanCapital
 3. Strategy
 
 **R**
-- Data: <<< Buy and save database. 
+- Data: 
 - Indicator
 - Strategy
 - Evaluation
@@ -21,7 +21,7 @@ Repository: AnanCapital
 - SubProject
 
 **Python**
-- Data 
+- Data = <<< Buy and save database.
 - Indicator = {atr, sma, spt, doncian,}
 - Strategy = {moving_average_crossover, breakout} 
 - Evaluation = 
