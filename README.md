@@ -8,11 +8,11 @@ Keep all the files for AnanCapital
 
 Repository: AnanCapital
 1. R
-2. Python
+2. Python <<< Working on!
 3. Strategy
 
 **R**
-- Data: Working on it!
+- Data: <<< Buy and save database. 
 - Indicator
 - Strategy
 - Evaluation
@@ -21,15 +21,15 @@ Repository: AnanCapital
 - SubProject
 
 **Python**
-- Data
-- Indicator
-- Strategy
-- Evaluation
-- Report
-- Operation
+- Data 
+- Indicator = {atr, sma, spt, doncian,}
+- Strategy = {moving_average_crossover, breakout} 
+- Evaluation = 
+- Report = {trade_report, risk_report, ...}
+- Operation = {signal_generator, portfolio_updating, 
 - SubProject
-- 
+
 **LiveStrategy**
 - SystemS1
-- ETFAllocation
-- 
+- ETFCustomize
+- FutureF1
