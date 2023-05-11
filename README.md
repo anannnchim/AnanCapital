@@ -21,7 +21,7 @@ Repository: AnanCapital
 - SubProject
 
 **Python**
-- Data = <<< random_data 
+- Data = { generate_data: random_data } 
 - Indicator = 
 - Strategy = 
 - Evaluation = 
