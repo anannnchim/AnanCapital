@@ -21,12 +21,12 @@ Repository: AnanCapital
 - SubProject
 
 **Python**
-- Data = <<< Buy and save database.
-- Indicator = {atr, sma, spt, doncian,}
-- Strategy = {moving_average_crossover, breakout} 
+- Data = <<< random_data 
+- Indicator = 
+- Strategy = 
 - Evaluation = 
-- Report = {trade_report, risk_report, ...}
-- Operation = {signal_generator, portfolio_updating, 
+- Report = 
+- Operation = 
 - SubProject
 
 **LiveStrategy**
