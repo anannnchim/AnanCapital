@@ -126,7 +126,7 @@ def threeassetportfolio(plength: int = 5000, SRlist: List[float] = [1.0, 1.0, 1.
     portreturns = portreturns[['one', 'two', 'three']]
     return portreturns
 
-ans=arbitrary_timeseries(generate_trendy_price(Nlength=30, Tlength=30, Xamplitude=40.0, Volscale=0.0)).plot()
+ans=arbitrary_timeseries(generate_trendy_price(Nlength=30, Tlength=15, Xamplitude=40.0, Volscale=0.0)).plot()
 
 
 
