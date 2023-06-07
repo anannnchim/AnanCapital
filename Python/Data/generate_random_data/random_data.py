@@ -1,11 +1,11 @@
 """
-Created on Sat May  6 22:12:20 2023
 
 -> 02 Create a random price data from Rob Carver
 
 : Generate large amounts of random data with the desired characteristics you want, and then analyse that. 
 - ref: https://qoppac.blogspot.com/2015/11/using-random-data.html
 - Func for random data: https://github.com/robcarver17/systematictradingexamples/blob/master/commonrandom.py#L56
+
 """
 
 import pandas as pd
@@ -62,5 +62,12 @@ def generate_trendy_price(Nlength: int, Tlength: int, Xamplitude: float, Volscal
 
 
 
-ans=arbitrary_timeseries(generate_trendy_price(Nlength=30, Tlength=10, Xamplitude=40.0, Volscale=0.0)).plot()
+# Generate Random price
+#ans=arbitrary_timeseries(generate_trendy_price(Nlength=180, Tlength=30, Xamplitude=40.0, Volscale=0.15)).plot()
+
+
+
+
+
+
 
