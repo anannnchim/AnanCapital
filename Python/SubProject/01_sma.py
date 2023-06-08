@@ -96,7 +96,6 @@ plt.show()
 
 
 
-
 #
 
 fake_data = arbitrary_timeseries(generate_trendy_price(Nlength=500, Tlength=60, Xamplitude=10.0, Volscale=0.10)) # fake_data
