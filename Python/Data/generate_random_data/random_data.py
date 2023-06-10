@@ -14,7 +14,10 @@ from random import gauss
 import numpy as np
 
 # Define function to generate random price data (convert to pd.series)
+
 def arbitrary_timeseries(prices):
+    # modify: add time_date
+    #pd.Series(prices).index = pd.date_range(start = '2020-01-01', periods= len(pd.Series(prices)))
     return pd.Series(prices)
 
 def generate_noise(Nlength: int, stdev: float) -> List[float]:
@@ -57,17 +60,8 @@ def generate_trendy_price(Nlength: int, Tlength: int, Xamplitude: float, Volscal
         process = generate_trends(Nlength, Tlength, Xamplitude)    
 
     combined_price = [noise_item + process_item for (noise_item, process_item) in zip(noise, process)]
+    
+    ## adjust: shift all up
+    combined_price = [value - min(combined_price) for value in combined_price]
 
     return combined_price
-
-
-
-# Generate Random price
-#ans=arbitrary_timeseries(generate_trendy_price(Nlength=180, Tlength=30, Xamplitude=40.0, Volscale=0.15)).plot()
-
-
-
-
-
-
-
