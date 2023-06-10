@@ -34,10 +34,6 @@ def calc_ewmac_forecast(price, Lfast, Lslow=None):
 
     return raw_ewmac / vol
 
-
-
-
-
 # # # pending 
 def calc_ewmac_forecast_fake(price, Lfast, Lslow=None):
     """
