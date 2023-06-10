@@ -24,7 +24,7 @@ Repository: AnanCapital
 - Data = { generate_data: random_data } 
 - Indicator = 
 - Strategy = 
-- Evaluation = 
+- PreEvaluation = system_characteristic
 - Report = 
 - Operation = 
 - SubProject
