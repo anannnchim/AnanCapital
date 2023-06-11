@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import sys
 import pandas as pd
 import yfinance as yf
+import numpy as np
+import datetime
 
 # get indicator
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Indicator")
@@ -27,7 +29,8 @@ from random_data import generate_trendy_price
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/PreEvaluation")
 from system_characteristic import calc_ewmac_turnover
 from system_characteristic import calc_holding_period
-
+from system_characteristic import simulate_sma_turnover_with_fdata
+from system_characteristic import simulate_sma_turnover_with_rdata
 
 ''' 1. Get both fake and real data ''' 
 
@@ -58,7 +61,7 @@ plt.show()
 
 ''' 3. Generate plot for fake data: does it make sense '''
 
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=100, Xamplitude=100, Volscale=0.00)) # fake_data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.15)) # fake_data
 
 # add date_time
 fake_data.index = pd.date_range(start = "2000-01-01", periods = len(fake_data))
@@ -98,66 +101,21 @@ print(f'Turnover: {turnover}')
 print(f'Avg.holding period: {avg_holding_period}')
 print(f'trade/year: {trades_per_year}')
 
-''' 5. Check turnover for fake_data given a pair of moving average'''
+''' 4. Check turnover for fake_data given a pair of moving average'''
 
-# Simulation
-def simulate_ma_strategy(window_fast, window_slow, Tlength):
-    """
-    Simulate a moving average trading strategy given the sizes of the fast and slow windows.
-    
-    Inputs:
-        - window_fast: int, size of the fast moving average window.
-        - window_slow: int, size of the slow moving average window.
-        - TLength: int, length of directional move 
-        
-    Outputs:
-        - df: pd.DataFrame, dataframe containing calculated metrics of the trading strategy.
-    """
-    # Create arbitrary time series
-    fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=Tlength, Xamplitude=100, Volscale=0.15)) 
-
-    # Add date_time
-    fake_data.index = pd.date_range(start = "2000-01-01", periods = len(fake_data))
-
-    # Calculate fast and slow moving averages
-    sma_f = fake_data.rolling(window = window_fast).mean()
-    sma_s = fake_data.rolling(window = window_slow).mean()
-
-    # Calculate holding series
-    hold = pd.Series([])    
-    for i in range(1, len(sma_s)):
-        if sma_f[i] > sma_s[i]:
-            hold.at[i] = 1
-        else:
-            hold.at[i] = 0
-
-    # Calculate metrics
-    avg_holding_period = calc_holding_period(fake_data, sma_f, sma_s) / calc_ewmac_turnover(fake_data, sma_f,sma_s)
-    turnover = calc_ewmac_turnover(fake_data, sma_f,sma_s)
-    holding_period = calc_holding_period(fake_data, sma_f, sma_s)
-    trades_per_year = turnover / 4
-
-    # Collect data in a dictionary
-    data = {
-        'Avg. holding period': [avg_holding_period],
-        'Trades/year': [trades_per_year]
-    }
-
-    # Convert the dictionary to a dataframe
-    df = pd.DataFrame(data)
-
-    return df
+simulate_sma_turnover_with_fdata(64,256,50)
 
 # Run
 Tlength = [5, 21, 64, 128, 256]
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
+# pairs = [(64, 256), (85, 256), (128, 256)]
 dataframes = []
 
 # iterate over all pairs
 for i, pair in enumerate(pairs):
     # iterate over all Tlength values
     for T in Tlength:
-        df = simulate_ma_strategy(pair[0], pair[1], Tlength=T)
+        df = simulate_sma_turnover_with_fdata(pair[0], pair[1], Tlength=T)
         df['Pair'] = f'Pair_{i+1}'
         df['Tlength'] = T
         dataframes.append(df)
@@ -166,20 +124,185 @@ for i, pair in enumerate(pairs):
 final_df = pd.concat(dataframes)
 print(final_df)
 
+'''
+Result: fake data
+# (2:8)
+   Avg. holding period  Trades/year    Pair  Tlength
+0             4.930000        25.00  Pair_1        5
+0             6.863014        18.25  Pair_1       21 # <<< can capture this trend Length
+0             3.406667        37.50  Pair_1       64
+0             2.911243        42.25  Pair_1      128
+0             2.816092        43.50  Pair_1      256
+
+# (4 : 16) 
+0             4.939394        24.75  Pair_2        5
+0            18.481481         6.75  Pair_2       21 # <<<
+0             9.236364        13.75  Pair_2       64 # <<<
+0             5.134021        24.25  Pair_2      128
+0             4.420561        26.75  Pair_2      256
+
+# (8 : 32)
+0             4.989796        24.50  Pair_3        5
+0            20.375000         6.00  Pair_3       21 # <<<
+0            40.500000         3.00  Pair_3       64 # <<< 
+0            40.250000         3.00  Pair_3      128
+0             9.460000        12.50  Pair_3      256
+
+
+# (16 : 64)
+0             5.153846        22.75  Pair_4        5
+0            20.608696         5.75  Pair_4       21
+0            51.444444         2.25  Pair_4       64 # <<< mathc best
+0           116.500000         1.00  Pair_4      128
+0           117.000000         1.00  Pair_4      256
+
+
+# ( 32 : 128)
+0             5.920000        18.75  Pair_5        5
+0            19.818182         5.50  Pair_5       21
+0            62.285714         1.75  Pair_5       64
+0           109.000000         1.00  Pair_5      128 # <<< match best
+0           217.000000         0.50  Pair_5      256 
+
+
+
+# (64 : 256)
+0             7.282609        11.50  Pair_6        5
+0            20.555556         4.50  Pair_6       21
+0            52.000000         1.75  Pair_6       64
+0           127.666667         0.75  Pair_6      128 # <<<   
+0           116.666667         0.75  Pair_6      256 # <<<
+
+
+# Result: Real data
+Pair           Avg. holding period  Trades/year  turnover  holding
+(2, 8)                6.401865    20.431629     389.6   2493.0                                                          
+(4, 16)              13.321197    10.069698     192.0   2557.2
+(8, 32)              28.625636     4.791888      91.4   2609.4
+(16, 64)             53.937053     2.569563      49.0   2634.8
+(32, 128)           125.654967     1.111587      21.2   2627.6
+(64, 256)           250.340280     0.588288      11.2   2786.6
+
+'''
+''' -------------------------------------------------------------------------------- ''' 
+''' 6. Check turnover for real data given a pair of moving average'''
+
+# Calculate date 20 years ago
+start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
+
+# Download data from 4 years ago to today
+stock_data = yf.download("SCC.BK", start=start_date)
+
+# Prep data
+sma_f = stock_data["Close"].rolling(window = 2).mean()
+sma_s = stock_data["Close"].rolling(window = 8).mean()
+forecast = calc_ewmac_forecast(stock_data["Close"],2,8)
+
+# holding 
+hold = pd.Series([])    
+for i in range(1, len(sma_s)):
+    if sma_f[i] > sma_s[i]:
+        hold.at[i] = 1
+    else:
+        hold.at[i] = 0
+
+# metrix
+avg_holding_period = calc_holding_period(stock_data, sma_f, sma_s) /  calc_ewmac_turnover(stock_data, sma_f,sma_s)
+turnover =  calc_ewmac_turnover(stock_data, sma_f,sma_s)
+holding_period = calc_holding_period(stock_data, sma_f, sma_s)
+trades_per_year = turnover / (len(stock_data) /256)
+
+# plot
+fig, axs = plt.subplots(3,1,figsize = (8,6))
+axs[0].plot(forecast, label = "Forecast")
+axs[0].axhline(y = 0, color = 'red', linestyle = "--")
+
+axs[1].plot( stock_data["Close"], label = "Close")
+axs[1].plot(sma_f, label = "sma_f")
+axs[1].plot(sma_s, label = "sma_s")
+axs[2].plot(hold, label = "holding")
+
+axs[0].set_title('Forecast')
+axs[1].set_title('Close')
+
+plt.tight_layout()
+plt.show()
+
+print(f'Avg.holding period: {avg_holding_period}')
+print(f'trade/year: {trades_per_year}')
+print(f'Turnover: {turnover}')
+print(f'Holding period: {holding_period}')
+
+
+# Run simulate
+
+symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK"]
+# pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
+pairs = [(64, 256), (85, 256), (128, 256)]
+
+dataframes = []
+
+# iterate over all pairs
+for i, pair in enumerate(pairs):
+    # iterate over all Tlength values
+    for symbol in symbol_list:
+        df = simulate_sma_turnover_with_rdata(symbol, pair[0], pair[1])
+        df['Pair'] = f'{pair[0],pair[1]}'
+        df['Symbol'] = symbol
+        dataframes.append(df)
+
+# Concatenate all dataframes into a single one
+final_df = pd.concat(dataframes)
+print(final_df.groupby("Pair").mean())
+print(final_df)
+
+'''
+Pair           Avg. holding period  Trades/year  turnover  holding
+(2, 8)                6.401865    20.431629     389.6   2493.0                                                          
+(4, 16)              13.321197    10.069698     192.0   2557.2
+(8, 32)              28.625636     4.791888      91.4   2609.4
+
+(16, 64)             53.937053     2.569563      49.0   2634.8 <<< capture Medium
+(32, 128)           125.654967     1.111587      21.2   2627.6 <<< capture Long
+(64, 256)           250.340280     0.588288      11.2   2786.6 <<< capture Long
+
+
+# Check variation of pair 16:64 >> same
+          Avg. holding period  Trades/year  turnover  holding
+Pair                                                         
+(16, 64)            53.937053     2.569563      49.0   2634.8 
+(21, 64)            59.010313     2.350177      44.8   2638.0
+(32, 64)            60.052206     2.318957      44.2   2642.6
+
+
+# Check variation of pair 64:256 >> same
+
+            Avg. holding period  Trades/year  turnover  holding
+Pair                                                           
+(64, 256)            250.340280     0.588288      11.2   2786.6
+(85, 256)            285.935556     0.515017       9.8   2784.8
+(128, 256)           258.671779     0.566625      10.8   2752.4
+
+* each stock has a consistent result. 
+
+Summary:
+    1. choice of {1/4, 1/3, 1/4} give the same expected holding and turnover
+    2. pair (16,64) capture 3 month trend or  avg.holding at 53 <<< System S1  
+    -  pair (32,128) capture 6 month trend or avg.holding at 125 
+    -  pair (64,256) capture 1 year trend or avg.holding at 250
+    3. fake data give similar properties as real data 
+'''
+
+
+
 
 ''' -------------------------------------------------------------------------------- ''' 
-# clean code above
-# check and verify with step 3 
-# check sensitivity with real data
-# Prune any window side that are likely to be too expensive
-
 # move to return part
-
-''' -------------------------------------------------------------------------------- ''' 
-
+# * Prune any window side that are likely to be too expensive
 ''' 6. Check Sharp. Ratio'''
+# calculate sharp to fake data 
+# calculate sharp for real data 
 # understand correlation structure to work out best window_size 
-
 """
    Note
    1. Amptitude is not affect turnover, vol.scale affect, when Nlength large enough: avg. holding not change (N:1000to5000)
