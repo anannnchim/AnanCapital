@@ -25,6 +25,7 @@ Repository: AnanCapital
 - Indicator = 
 - Strategy = 
 - PreEvaluation = system_characteristic
+- StatisticalComputing = measure_significant
 - Report = 
 - Operation = 
 - SubProject
