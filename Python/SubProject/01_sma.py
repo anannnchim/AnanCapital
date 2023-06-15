@@ -37,6 +37,12 @@ from system_performance import get_daily_return
 from system_performance import get_sharp_ratio
 from system_performance import compute_sharp_ratio
 from system_performance import calculate_sharp_ratio
+
+# clean data
+sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Data/data_prep")
+from clean_data import check_invalid_dataframe
+
+
 ''' 1. Get both fake and real data ''' 
 
 # Real data: pick 4 
@@ -66,6 +72,10 @@ plt.show()
 
 ''' 3. Generate plot for fake data: does it make sense '''
 
+# sample data
+sample_data = pd.Series([1,2,3])
+sample_data.index = pd.date_range(start = "2023-06-05", periods = len(sample_data))
+# fake_data
 fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.15)) # fake_data
 
 # add date_time
@@ -238,7 +248,6 @@ print(f'trade/year: {trades_per_year}')
 print(f'Turnover: {turnover}')
 print(f'Holding period: {holding_period}')
 
-
 # Run simulate
 
 # stocks
@@ -315,29 +324,49 @@ Summary:
 ''' -------------------------------------------------------------------------------- ''' 
 
 ''' 6. Compute Sharp Ratio '''
-# sample data
-sample_data = pd.Series([1,2,3])
-sample_data.index = pd.date_range(start = "2023-06-05", periods = len(sample_data))
-
-# fake data
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.15)) # fake_data
-
 
 ''' Compute return for Real data '''  
 
 # stock data
-stock_data = yf.download("XLF", start = "2000-04-05") # stock_data
+stock_data = yf.download("AOT.BK", start = "2000-04-05") # stock_data
 stock_data = stock_data["Close"]
+
+
+# fake data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.05)) # fake_data
+stock_data = fake_data.to_frame()
+stock_data.columns = ['Close'] 
+
+
+# clean data # 
+check_invalid_dataframe(stock_data)
+check_invalid_dataframe(sma_s)
+check_invalid_dataframe(sma_f)
+
 
 # indicators
 stock_data
-window_fast = 2
-window_slow = 8
-
+window_fast = 50
+window_slow = 200
 sma_f = stock_data.rolling(window = window_fast).mean()
 sma_s = stock_data.rolling(window = window_slow).mean()
 
-# forecast 
+
+# plot 
+fig, axs = plt.subplots(2,1,figsize = (8,6))
+axs[0].plot( stock_data, label = "Close")
+axs[0].plot(sma_f, label = "sma_f")
+axs[0].plot(sma_s, label = "sma_s")
+axs[0].legend()  # Display the legend on the first subplot
+axs[1].plot(hold, label = "holding")
+axs[1].axhline(y = 0, color = 'red', linestyle = "--")
+axs[1].legend()  # Display the legend on the second subplot
+axs[0].set_title('Holding')
+axs[1].set_title('Close')
+plt.tight_layout()
+plt.show()
+
+# forecast  <<< 
 forecast = pd.Series(index=stock_data.index) 
 for i in range(len(sma_s)):
     forecast[i] = sma_f[i] - sma_s[i]
@@ -409,17 +438,29 @@ print(f"new: {new_sharp}")
 # compute sharp. ratio from function
 calculate_sharp_ratio("XLF", 2,8)
 
-
-''' Simulate '''  
+''' Simulate sharp ratio with real data. '''  
 
 # Simulate the result
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
 pairs = [ (16, 64), (32, 128), (64, 256)]
 
+# variation of (64,256)
+pairs = [(64, 256), (85, 256), (128, 256)]
+
+pairs = [(50, 200), (100, 200), (150, 200)]
+
 # RUN
-symbol_list = ["XLF","EWJ","ARKG","EMB", "TIP","VNQ", "GLD"] # ETFs
-symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK"] # SET
-symbol_list = ["XLF","EWJ"]
+symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK",
+               "ADVANC.BK", "BANPU.BK", "BBL.BK", "BEM.BK", "BH.BK",
+               "CENTEL.BK", "EA.BK", "GPSC.BK", "TRUE.BK", "TTB.BK"] # SET
+
+symbol_list = ["AOT.BK"]
+
+# ETFs 
+file_path = '/Users/nanthawat/Desktop/universe.csv'
+df = pd.read_csv(file_path)
+symbol_list = df["STOCK"].tolist()
+symbol_list = symbol_list[1:]
 
 # iterate over all pairs
 sharp_ratios_by_pair = {}
@@ -435,19 +476,80 @@ for pair in pairs:
 
 # plot a boxplot for each pair
 fig, ax = plt.subplots()
-ax.boxplot(sharp_ratios_by_pair.values())
+ax.boxplot(sharp_ratios_by_pair.values(), whis=[5, 95], showfliers = False)
 ax.set_xticklabels(sharp_ratios_by_pair.keys())
 plt.show()
 
-
 # mean value 
-mean_values = {key: np.mean(val) for key, val in sharp_ratios_by_pair.items()}
+
+mean_values = {key: np.round(np.mean(val), 2) for key, val in sharp_ratios_by_pair.items()}
 mean_values
 
+# ETFs Universe (35)
+''' *Apply sma algo
+* Orignial sharp = 0.27
 
-''' Compute return for Fake data '''
-# PENDING: find proper data and compute again 
+{'(2, 8)': 0.09,
+ '(4, 16)': 0.20,
+ '(8, 32)': 0.27,
+ '(16, 64)': 0.26,
+ '(32, 128)': 0.30,
+ '(64, 256)': 0.32}
+'''
+# variation of (64,256): similar 
+'''
+{'(64, 256)': 0.32,
+ '(85, 256)': 0.31,
+ '(128, 256)': 0.32}
+'''
+
+# variation of (150,200
+'''
+{'(50, 200)': 0.31, 
+'(100, 200)': 0.33, 
+'(150, 200)': 0.32})
+'''
+
+# Thai stocks high cap. 
+'''
+{'(2, 8)': 0.4551837758580887,
+ '(4, 16)': 0.5026926974854761,
+ '(8, 32)': 0.49418653981992466,
+ '(16, 64)': 0.49184829701543753,
+ '(32, 128)': 0.5002576331511807,
+ '(64, 256)': 0.47792331101232205}
+'''
+
+# ETFs Universe (35) 
+''' Annual return
+{'(2, 8)': 0.03,
+ '(4, 16)': 0.04,
+ '(8, 32)': 0.05,
+ '(16, 64)': 0.05,
+ '(32, 128)': 0.05,
+ '(64, 256)': 0.06}
+
+ Annual Risk 
+{'(2, 8)': 0.15,
+ '(4, 16)': 0.14,
+ '(8, 32)': 0.14,
+ '(16, 64)': 0.14,
+ '(32, 128)': 0.14,
+ '(64, 256)': 0.15}
+'''
+
+# apply cost limit 
+
+
+
+''' Simulate sharp ratio with fake data. '''  
+
+
+
 # Prune any window side that are likely to be too expensive page 90
+'''
+- create a func
+'''
 # calculate sharp to fake data 
 # calculate sharp for real data 
 # understand correlation structure to work out best window_size 
@@ -455,6 +557,8 @@ mean_values
 # columns NLength month to year
 # row: window (half or third of actual trend)
 # turnver depend on window size not Tlength
+
+
 
 ''' -------------------------------------------------------------------------------- ''' 
 

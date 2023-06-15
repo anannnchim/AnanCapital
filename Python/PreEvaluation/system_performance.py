@@ -192,6 +192,24 @@ def calculate_sharp_ratio(symbol, window_fast, window_slow):
     # Compute the sharp ratios using daily returns and system returns
     original_sharp = compute_sharp_ratio(daily_return)
     new_sharp = compute_sharp_ratio(system_return)
-
+    
+    # modify
+    annual_return = np.mean(system_return)*256
+    annual_risk = np.std(system_return)*16
+    
     # Return the computed sharp ratios
-    return new_sharp
+    return annual_risk # new_sharp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
