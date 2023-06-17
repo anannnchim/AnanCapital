@@ -62,6 +62,11 @@ def generate_trendy_price(Nlength: int, Tlength: int, Xamplitude: float, Volscal
     combined_price = [noise_item + process_item for (noise_item, process_item) in zip(noise, process)]
     
     ## adjust: shift all up
-    combined_price = [value - min(combined_price) for value in combined_price]
+    #combined_price = [value - min(combined_price) for value in combined_price]
+    combined_price = [value + Xamplitude for value in combined_price]
+
 
     return combined_price
+
+
+

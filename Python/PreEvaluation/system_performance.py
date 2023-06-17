@@ -11,11 +11,18 @@ from typing import Union, List
 import numpy as np
 import pandas as pd
 
+import datetime
+import yfinance as yf
+import sys
+
 from syscore.dateutils import BUSINESS_DAYS_IN_YEAR, SECONDS_IN_YEAR
 from syscore.pandas.pdutils import uniquets
 
-import datetime
-import yfinance as yf
+# get random data
+sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Data/generate_random_data")
+from random_data import arbitrary_timeseries
+from random_data import generate_trendy_price
+
 
 
 def get_daily_return(stock_data):
@@ -202,10 +209,44 @@ def calculate_sharp_ratio(symbol, window_fast, window_slow):
 
 
 
+def calculate_sharp_ratio_fdata(Tlength, Volscale,window_fast, window_slow):
+    
+    # fake data
+    fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=Tlength, Xamplitude=100, Volscale=Volscale)) # fake_data
+    stock_data = fake_data.to_frame()
+    stock_data.columns = ['Close'] 
 
+    # indicators
+    sma_f = stock_data.rolling(window = window_fast).mean()
+    sma_s = stock_data.rolling(window = window_slow).mean()
 
+    # forecast
+    forecast = sma_f - sma_s
 
+    # holding
+    hold = (forecast >= 0).astype(int)
 
+    # daily return
+    daily_return = get_daily_return(stock_data) 
+    cumulative_daily_return = (1 + daily_return).cumprod() - 1
+
+    # system performance
+    system_return = daily_return * hold.shift(1)
+
+    # cum_return 
+    system_cum_return = (1 + system_return).cumprod() - 1
+    
+    # calculate sharp Ratio
+    original_sharp = compute_sharp_ratio(daily_return)
+    new_sharp = compute_sharp_ratio(system_return)
+    #print(f"original: {original_sharp}")
+    #print(f"new: {new_sharp}")
+    
+    # modify
+    annual_return = np.mean(system_return)*256
+    annual_risk = np.std(system_return)*16
+    
+    return new_sharp
 
 
 

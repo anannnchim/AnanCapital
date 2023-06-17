@@ -19,6 +19,7 @@ import datetime
 # get indicator
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Indicator")
 from indicators import calc_ewmac_forecast # calc_ewmac_forecast
+# from indicators import calc_ewmac_forecast_fake # calc_ewmac_forecast_fake: not working
 
 # get random data
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Data/generate_random_data")
@@ -37,6 +38,8 @@ from system_performance import get_daily_return
 from system_performance import get_sharp_ratio
 from system_performance import compute_sharp_ratio
 from system_performance import calculate_sharp_ratio
+from system_performance import calculate_sharp_ratio_fdata
+
 
 # clean data
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Data/data_prep")
@@ -325,24 +328,17 @@ Summary:
 
 ''' 6. Compute Sharp Ratio '''
 
-''' Compute return for Real data '''  
-
 # stock data
 stock_data = yf.download("AOT.BK", start = "2000-04-05") # stock_data
 stock_data = stock_data["Close"]
 
 
+''' Compute sharp for fake data '''  
+
 # fake data
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.05)) # fake_data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=5, Xamplitude=100, Volscale=0.0)) # fake_data
 stock_data = fake_data.to_frame()
 stock_data.columns = ['Close'] 
-
-
-# clean data # 
-check_invalid_dataframe(stock_data)
-check_invalid_dataframe(sma_s)
-check_invalid_dataframe(sma_f)
-
 
 # indicators
 stock_data
@@ -351,34 +347,12 @@ window_slow = 200
 sma_f = stock_data.rolling(window = window_fast).mean()
 sma_s = stock_data.rolling(window = window_slow).mean()
 
+# forecast  <<< adjust
+forecast = sma_f - sma_s
 
-# plot 
-fig, axs = plt.subplots(2,1,figsize = (8,6))
-axs[0].plot( stock_data, label = "Close")
-axs[0].plot(sma_f, label = "sma_f")
-axs[0].plot(sma_s, label = "sma_s")
-axs[0].legend()  # Display the legend on the first subplot
-axs[1].plot(hold, label = "holding")
-axs[1].axhline(y = 0, color = 'red', linestyle = "--")
-axs[1].legend()  # Display the legend on the second subplot
-axs[0].set_title('Holding')
-axs[1].set_title('Close')
-plt.tight_layout()
-plt.show()
+# holding  <<< adjust
+hold = (forecast >= 0).astype(int)
 
-# forecast  <<< 
-forecast = pd.Series(index=stock_data.index) 
-for i in range(len(sma_s)):
-    forecast[i] = sma_f[i] - sma_s[i]
-
-# holding 
-hold = pd.Series(index=stock_data.index) 
-for i in range(len(forecast)):
-    if forecast[i] >= 0:
-        hold[i] = 1
-    else:
-        hold[i] = 0
-        
 # daily return
 daily_return = get_daily_return(stock_data) 
 cumulative_daily_return = (1 + daily_return).cumprod() - 1
@@ -390,7 +364,7 @@ system_return = daily_return * hold.shift(1)
 system_cum_return = (1 + system_return).cumprod() - 1
 
 # Convert Series to DataFrame
-df = stock_data.to_frame()
+df = fake_data.to_frame()
 df = df.assign(sma_f = sma_f,
                sma_s = sma_s,
                forecast = forecast,
@@ -400,9 +374,17 @@ df = df.assign(sma_f = sma_f,
                cumulative_daily_return = cumulative_daily_return,
                system_cum_return = system_cum_return) 
 
+# rename heading
+df.rename(columns = {df.columns[0]: 'Close'}, inplace = True)
 
 # fill all NaN with first element
 df = df.fillna(method='bfill').fillna(method='ffill')
+
+# calculate sharp Ratio
+original_sharp = compute_sharp_ratio(daily_return)
+new_sharp = compute_sharp_ratio(system_return)
+print(f"original: {original_sharp}")
+print(f"new: {new_sharp}")
 
 # plot
 fig, axs = plt.subplots(5,1,figsize = (8,6))
@@ -429,16 +411,56 @@ axs[4].plot(df['system_cum_return'] , label = "system_cum_return")
 plt.tight_layout()
 plt.show()
 
-# calculate sharp Ratio
-original_sharp = compute_sharp_ratio(daily_return)
-new_sharp = compute_sharp_ratio(system_return)
-print(f"original: {original_sharp}")
-print(f"new: {new_sharp}")
 
-# compute sharp. ratio from function
-calculate_sharp_ratio("XLF", 2,8)
+# compute sharp Ratio using function
+window_fast = 2
+window_slow = 8
+Tlength = 21
+Volscale = 0.05
+
+calculate_sharp_ratio_fdata(Tlength,Volscale, window_fast,window_slow)
+
+pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
+trend_length = [5, 21, 64, 128, 256]
+
+sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  0.15, pair[0], pair[1]) for TLength in trend_length] for pair in pairs}
+
+# simulate sharp of fake data
+pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
+trend_length = [5, 21, 64, 128, 256]
+
+pairs = [(2, 8)]
+trend_length = [256]
+Volscale = 0
+
+
+sharp_ratios_by_pair = {}
+# Using dict and list comprehensions
+sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  0, pair[0], pair[1]) for TLength in trend_length] for pair in pairs}
+df = pd.DataFrame(sharp_ratios_by_pair)
+
+# Transpose the DataFrame if you want each row to correspond to a pair
+df = df.T
+
+# Reset the index if you want the pairs to be a column instead of an index
+df.reset_index(inplace=True)
+
+# mean value 
+mean_values = {key: np.round(np.mean(val), 2) for key, val in sharp_ratios_by_pair.items()}
+mean_values
+
+# Create the bar plot
+plt.bar(mean_values.keys(), mean_values.values())
+plt.xlabel('Pairs')
+plt.ylabel('Mean Value')
+plt.title('Mean Value for each Pair')
+plt.xticks(rotation=90) # This rotates the x-axis labels so they don't overlap
+plt.show()
 
 ''' Simulate sharp ratio with real data. '''  
+# Compute Sharp Ratio for single real data
+calculate_sharp_ratio("XLF", 2,8)
+
 
 # Simulate the result
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
@@ -512,12 +534,12 @@ mean_values
 
 # Thai stocks high cap. 
 '''
-{'(2, 8)': 0.4551837758580887,
- '(4, 16)': 0.5026926974854761,
- '(8, 32)': 0.49418653981992466,
- '(16, 64)': 0.49184829701543753,
- '(32, 128)': 0.5002576331511807,
- '(64, 256)': 0.47792331101232205}
+{'(2, 8)': 0.45
+ '(4, 16)': 0.50
+ '(8, 32)': 0.49
+ '(16, 64)': 0.49
+ '(32, 128)': 0.50
+ '(64, 256)': 0.47
 '''
 
 # ETFs Universe (35) 
@@ -538,60 +560,113 @@ mean_values
  '(64, 256)': 0.15}
 '''
 
-# apply cost limit 
-
-
-
-''' Simulate sharp ratio with fake data. '''  
-
-
-
-# Prune any window side that are likely to be too expensive page 90
+# 1. apply cost limit 
 '''
-- create a func
+# Sharp Ratio for real data:  
+    * Universe : 35 ETFs
+    * with Annual risk = 14% and return = 5%
+    * turnover/year 
+    * transaction cost = 0.01% (according to US ETFs from Rob excel)
+    * holding cost = 1.05% (management fee by ETF and by SA)
+    
+            Sharp R.   | Turnover | 1/3 Sharp.(limit)  || 
+    {'(2, 8)': 0.09,   | 20 | 0.03  || (20*0.01%) + (1.05%) = 0.09*** exceed 
+     '(4, 16)': 0.20,  | 10 |  0.07 || 0.08*** exceed
+     '(8, 32)': 0.27,  |  5 | 0.09  || 0.08 [Pass]
+     '(16, 64)': 0.26, |  3 | 0.09  || 0.08 [Pass]
+     '(32, 128)': 0.30, | 1 | 0.1   || 0.08 [Pass]
+     '(64, 256)': 0.32} | 1 | 0.11  || 0.08 [Pass]
+    
+    *assume no exchange fee, custodian fee and no inside trading fund fee.
+    
 '''
-# calculate sharp to fake data 
-# calculate sharp for real data 
-# understand correlation structure to work out best window_size 
-# how trend length relates to profitability of window_size
-# columns NLength month to year
-# row: window (half or third of actual trend)
-# turnver depend on window size not Tlength
-
 
 
 ''' -------------------------------------------------------------------------------- ''' 
 
 """
-   Note
-   1. Amptitude is not affect turnover, vol.scale affect, when Nlength large enough: avg. holding not change (N:1000to5000)
-   - number of avg. holding related to Tlength
-   2. need to calculate exact buy and sell and count day. 
-   - create a  table window_size x trendlength(rob said not important ) [Turnover]
-   
-   4. calculate sharp R. given a pair. 
-   - create a function ?
-   - create a function to compute sharp R. (boxplot page 90)
-   - vdo: (trend length x window size) : [avg. sharp R.]
-   
-   5. make a function for a plot 
-   
+  Summary:
+      
+      Turnover:
+          
+          # Result: Real data
+          Pair           Avg. holding period  Trades/year  turnover  holding
+          (2, 8)                6.401865    20.431629     389.6   2493.0                                                          
+          (4, 16)              13.321197    10.069698     192.0   2557.2
+          (8, 32)              28.625636     4.791888      91.4   2609.4
+          (16, 64)             53.937053     2.569563      49.0   2634.8
+          (32, 128)           125.654967     1.111587      21.2   2627.6
+          (64, 256)           250.340280     0.588288      11.2   2786.6
+          
+          
+          1. it is consistant among real {ETFs and SET} and fake data
+          2. choice of pair variation of {1/4, 1/3, 1/4} give the same expected holding and turnover
+          3. pair (16,64) capture 3 month trend or  avg.holding at 53 <<< System S1  
+          4. pair (32,128) capture 6 month trend or avg.holding at 125 
+          5. pair (64,256) capture 1 year trend or avg.holding at 250 
+          
+          
+          
+     Sharp Ratio:
+         
+         * Universe : 35 ETFs
+         * ETFs: Orignial sharp = 0.27
+         * with Annual risk = 14% and return = 5%
+         
+         # Pre-cost sharp.
+         {'(2, 8)': 0.09,
+          '(4, 16)': 0.20,
+          '(8, 32)': 0.27,
+          '(16, 64)': 0.26,
+          '(32, 128)': 0.30,
+          '(64, 256)': 0.32}
+         '''
+         
+         * turnover/year  
+         * transaction cost = 0.01% (according to US ETFs from Rob excel)
+         * holding cost = 1.05% (management fee by ETF and by SA)
+         * assume no exchange fee, custodian fee and no inside trading fund fee.
+         
+         
+         # Post-cost sharp.
+          Pair | Sharp R.   | Turnover | 1/3 Sharp.(limit)  ||  ->>  sharp.after cost
+          
+         {'(2, 8)': 0.09,   | 20 | 0.03  || (20*0.01%) + (1.05%) = 0.09 [Exceed]  ->> 0
+          '(4, 16)': 0.20,  | 10 |  0.07 || 0.08 [Exceed] ->> 0.08
+          
+          '(8, 32)': 0.27,  |  5 | 0.09  || 0.08 [Pass] ->> 0.19
+          '(16, 64)': 0.26, |  3 | 0.09  || 0.08 [Pass] ->> 0.18
+          '(32, 128)': 0.30, | 1 | 0.1   || 0.08 [Pass] ->> 0.22
+          '(64, 256)': 0.32} | 1 | 0.11  || 0.08 [Pass] ->> 0.24
+        
+         
+        
+         
+         1. all sharp.after cost < original sharp. 
+         2. choice of pair variation of {1/4, 1/3, 1/4} give the same sharp ratio
+         3. Pair (2,8) and (4,16) are too expensive to trade.
+         4. from pair (8,32) to (64,256) give similar cost in term of sharp. - 0.08
+         
+         
+         Example sma: (64,256)
+         
+             - turnover: 1 / year
+             - sharp.before cost = 0.32
+             - sharp.after cost = 0.24
+             - cost in sharp = 0.08
+             
+             Expected return = 3.36%
+             Expected risk = 14% 
+  
+  
+     Further study:
+         - fit allocation using real data (how sharp ratio affect position sizing)
+         - try different fake data 
+      
 """
 
 
-''' 6. fit allocation using real data'''
 
-# how sharp Ratio affect by position sizing 
-
-
-# -------------------------------------#  
-
-''' 5. Understand system '''
-
-'''
-create a function to calculate sharp Ratio given forecast 
-- forecast -> sharp 
-'''
 
 
 
