@@ -205,7 +205,7 @@ def calculate_sharp_ratio(symbol, window_fast, window_slow):
     annual_risk = np.std(system_return)*16
     
     # Return the computed sharp ratios
-    return annual_risk # new_sharp
+    return new_sharp # new_sharp
 
 
 

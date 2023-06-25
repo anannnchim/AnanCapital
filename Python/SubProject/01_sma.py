@@ -4,9 +4,9 @@
 Created on Sun Apr 30 10:29:39 2023
 
 -> 01. Develop trading system using: fake data, sma crossover
-
-@author: nanthawat
 """
+
+''' ---------------------------------0. import library --------------------------------- ''' 
 
 # normal lib
 import matplotlib.pyplot as plt
@@ -40,52 +40,23 @@ from system_performance import compute_sharp_ratio
 from system_performance import calculate_sharp_ratio
 from system_performance import calculate_sharp_ratio_fdata
 
-
 # clean data
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Data/data_prep")
 from clean_data import check_invalid_dataframe
 
+ 
+''' -------------3. Generate plot for fake data: does it make sense ------------------------ ''' 
 
-''' 1. Get both fake and real data ''' 
 
-# Real data: pick 4 
-stock_data = yf.download("GLD", start = "2000-06-07", end = "2023-06-07") # stock_data
-
-''' 2. Generate plot for Real data: does it make sense'''  
-
-# Prep data
-sma_f = stock_data["Close"].rolling(window = 32).mean()
-sma_s = stock_data["Close"].rolling(window = 128).mean()
-forecast = calc_ewmac_forecast(stock_data["Close"],32,128)
-
-# plot
-fig, axs = plt.subplots(2,1,figsize = (8,6))
-axs[0].plot(forecast, label = "Forecast")
-axs[0].axhline(y = 0, color = 'red', linestyle = "--")
-
-axs[1].plot( stock_data["Close"], label = "Close")
-axs[1].plot(sma_f, label = "sma_f")
-axs[1].plot(sma_s, label = "sma_s")
-
-axs[0].set_title('Forecast')
-axs[1].set_title('Close')
-
-plt.tight_layout()
-plt.show()
-
-''' 3. Generate plot for fake data: does it make sense '''
-
-# sample data
-sample_data = pd.Series([1,2,3])
-sample_data.index = pd.date_range(start = "2023-06-05", periods = len(sample_data))
 # fake_data
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.15)) # fake_data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1024, Tlength=50, Xamplitude=100, Volscale=0.0)) # fake_data
 
 # add date_time
 fake_data.index = pd.date_range(start = "2000-01-01", periods = len(fake_data))
 
-sma_f = fake_data.rolling(window = 64).mean()
-sma_s = fake_data.rolling(window = 256).mean()
+# add indicator
+sma_f = fake_data.rolling(window = 32).mean()
+sma_s = fake_data.rolling(window = 128).mean()
 
 # holding 
 hold = pd.Series([])    
@@ -105,23 +76,22 @@ axs[1].axhline(y = 0, color = 'red', linestyle = "--")
 axs[1].legend()  # Display the legend on the second subplot
 axs[0].set_title('Holding')
 axs[1].set_title('Close')
-
 plt.tight_layout()
 plt.show()
 
 avg_holding_period = calc_holding_period(fake_data, sma_f, sma_s) /  calc_ewmac_turnover(fake_data, sma_f,sma_s)
 turnover =  calc_ewmac_turnover(fake_data, sma_f,sma_s)
 holding_period = calc_holding_period(fake_data, sma_f, sma_s)
-trades_per_year = turnover / 4
+turnover_per_year = turnover / 4
 
 print(f'Holding period: {holding_period}')
 print(f'Turnover: {turnover}')
 print(f'Avg.holding period: {avg_holding_period}')
-print(f'trade/year: {trades_per_year}')
+print(f'turnover per year: {turnover_per_year}')
 
 ''' 4. Check turnover for fake_data given a pair of moving average'''
 
-simulate_sma_turnover_with_fdata(64,256,50)
+simulate_sma_turnover_with_fdata(32,128,50)
 
 # Run
 Tlength = [5, 21, 64, 128, 256]
@@ -209,12 +179,12 @@ Pair           Avg. holding period  Trades/year  turnover  holding
 start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
 
 # Download data from 4 years ago to today
-stock_data = yf.download("SCC.BK", start=start_date)
+stock_data = yf.download("DELTA.BK", start="2018-06-23", end = "2023-06-23")
 
 # Prep data
-sma_f = stock_data["Close"].rolling(window = 2).mean()
-sma_s = stock_data["Close"].rolling(window = 8).mean()
-forecast = calc_ewmac_forecast(stock_data["Close"],2,8)
+sma_f = stock_data["Close"].rolling(window = 32).mean()
+sma_s = stock_data["Close"].rolling(window = 128).mean()
+forecast = calc_ewmac_forecast(stock_data["Close"],32,128)
 
 # holding 
 hold = pd.Series([])    
@@ -260,23 +230,8 @@ symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK"]
 symbol_list = ["XLF","EWJ","ARKG","EMB", "TIP","VNQ", "GLD"]
 # pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
 pairs = [(64, 256), (85, 256), (128, 256)]
-
-dataframes = []
-
-# iterate over all pairs
-for i, pair in enumerate(pairs):
-    # iterate over all Tlength values
-    for symbol in symbol_list:
-        df = simulate_sma_turnover_with_rdata(symbol, pair[0], pair[1])
-        df['Pair'] = f'{pair[0],pair[1]}'
-        df['Symbol'] = symbol
-        dataframes.append(df)
-
-# Concatenate all dataframes into a single one
-final_df = pd.concat(dataframes)
-print(final_df.groupby("Pair").mean())
-print(final_df)
-
+pairs = [ (32, 128), (64, 128), (50, 150)]
+ 
 ''' Thai stock 
 Pair           Avg. holding period  Trades/year  turnover  holding
 (2, 8)                6.401865    20.431629     389.6   2493.0                                                          
@@ -329,21 +284,22 @@ Summary:
 ''' 6. Compute Sharp Ratio '''
 
 # stock data
-stock_data = yf.download("AOT.BK", start = "2000-04-05") # stock_data
+start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
+stock_data = yf.download("AOT.BK", start=start_date)
 stock_data = stock_data["Close"]
 
 
 ''' Compute sharp for fake data '''  
 
 # fake data
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=5, Xamplitude=100, Volscale=0.0)) # fake_data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=125, Xamplitude=100, Volscale=0.0)) # fake_data
 stock_data = fake_data.to_frame()
 stock_data.columns = ['Close'] 
 
 # indicators
 stock_data
-window_fast = 50
-window_slow = 200
+window_fast = 32
+window_slow = 128
 sma_f = stock_data.rolling(window = window_fast).mean()
 sma_s = stock_data.rolling(window = window_slow).mean()
 
@@ -364,7 +320,8 @@ system_return = daily_return * hold.shift(1)
 system_cum_return = (1 + system_return).cumprod() - 1
 
 # Convert Series to DataFrame
-df = fake_data.to_frame()
+# df = stock_data.to_frame()
+df = pd.DataFrame()
 df = df.assign(sma_f = sma_f,
                sma_s = sma_s,
                forecast = forecast,
@@ -413,10 +370,10 @@ plt.show()
 
 
 # compute sharp Ratio using function
-window_fast = 2
-window_slow = 8
-Tlength = 21
-Volscale = 0.05
+window_fast = 32
+window_slow = 128
+Tlength = 125
+Volscale = 0.15
 
 calculate_sharp_ratio_fdata(Tlength,Volscale, window_fast,window_slow)
 
@@ -427,10 +384,10 @@ sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  0.15, 
 
 # simulate sharp of fake data
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
+
+pairs = [ (32, 128)]
 trend_length = [5, 21, 64, 128, 256]
 
-pairs = [(2, 8)]
-trend_length = [256]
 Volscale = 0
 
 
@@ -459,12 +416,19 @@ plt.show()
 
 ''' Simulate sharp ratio with real data. '''  
 # Compute Sharp Ratio for single real data
-calculate_sharp_ratio("XLF", 2,8)
+calculate_sharp_ratio("XLF",i,128)
 
+
+# simulate variation of pair
+main = 128
+pair = [26, 38, 51, 64, 77, 90, 102, 115]
+for i in pair:
+    print( calculate_sharp_ratio("DELTA.BK", i, main))
+    
 
 # Simulate the result
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
-pairs = [ (16, 64), (32, 128), (64, 256)]
+pairs = [ (32, 128), (64, 128), (50, 150)]
 
 # variation of (64,256)
 pairs = [(64, 256), (85, 256), (128, 256)]
@@ -477,35 +441,13 @@ symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK",
                "CENTEL.BK", "EA.BK", "GPSC.BK", "TRUE.BK", "TTB.BK"] # SET
 
 symbol_list = ["AOT.BK"]
-
-# ETFs 
-file_path = '/Users/nanthawat/Desktop/universe.csv'
-df = pd.read_csv(file_path)
-symbol_list = df["STOCK"].tolist()
-symbol_list = symbol_list[1:]
-
-# iterate over all pairs
-sharp_ratios_by_pair = {}
-
-for pair in pairs:
-    sharp_ratios = []
-    # iterate over all symbol values
-    for symbol in symbol_list:
-        sharp_ratio = calculate_sharp_ratio(symbol, pair[0], pair[1])
-        sharp_ratios.append(sharp_ratio)
-
-    sharp_ratios_by_pair[str(pair)] = sharp_ratios
-
-# plot a boxplot for each pair
-fig, ax = plt.subplots()
-ax.boxplot(sharp_ratios_by_pair.values(), whis=[5, 95], showfliers = False)
-ax.set_xticklabels(sharp_ratios_by_pair.keys())
-plt.show()
-
+ 
 # mean value 
-
 mean_values = {key: np.round(np.mean(val), 2) for key, val in sharp_ratios_by_pair.items()}
 mean_values
+
+median_values = {key: np.round(np.median(val), 2) for key, val in sharp_ratios_by_pair.items()}
+median_values
 
 # ETFs Universe (35)
 ''' *Apply sma algo
@@ -593,7 +535,6 @@ mean_values
           Pair           Avg. holding period  Trades/year  turnover  holding
           (2, 8)                6.401865    20.431629     389.6   2493.0                                                          
           (4, 16)              13.321197    10.069698     192.0   2557.2
-          (8, 32)              28.625636     4.791888      91.4   2609.4
           (16, 64)             53.937053     2.569563      49.0   2634.8
           (32, 128)           125.654967     1.111587      21.2   2627.6
           (64, 256)           250.340280     0.588288      11.2   2786.6
@@ -668,17 +609,149 @@ mean_values
 
 
 
+''' 7. Compute forecast vs binary Sharp.ratio '''
+
+''' page 284
+    1. raw forecast 
+    2. risk adjusted raw forecast (standardized forecast) (volatility adjusted)
+    3. scaled forecast = raw forecast x forcast scalar 
+    4. capped forecast
+    * forcast scalar = 10 / natual average value 
+    * ETFs: forecast scalar of EWMA(32,128) = 3.30
+'''
+
+
+# Download data from 4 years ago to today
+start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
+
+# manual
+stock_list = ["AOT.BK","PTT.BK","JMART.BK"]
+stock_list = ["SKY.BK"]
+stock_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK",
+               "ADVANC.BK", "BANPU.BK", "BBL.BK", "BEM.BK", "BH.BK",
+               "CENTEL.BK", "EA.BK", "GPSC.BK", "TTB.BK"] # SET
+
+# ETFs 
+file_path = '/Users/nanthawat/Desktop/universe.csv'
+df = pd.read_csv(file_path)
+stock_list = df["STOCK"].tolist()
+stock_list = symbol_list[1:]
 
 
 
+# Initialize two empty dictionaries to store the forecasts and raw data
+forecasts = {}
+raw_data = {}  # Rename this variable to avoid confusion with the 'raw' inside the loop
+
+natural_f = -1
+sum_natural_f = 0
+f_scalar = -1 
+
+for stock in stock_list:
+    
+    stock_data = yf.download(stock, start=start_date)
+
+    # Prep data
+    sma_f = stock_data["Close"].rolling(window = 32).mean()
+    sma_s = stock_data["Close"].rolling(window = 128).mean()
+
+    # Calculate forecast and raw data
+    forecast = calc_ewmac_forecast(stock_data["Close"],32,128)
+    raw = sma_f - sma_s
+    
+
+    # Save forecast and raw data in the dictionaries
+    forecasts[stock + "_forecast"] = forecast
+    raw_data[stock + "_raw"] = raw  # Save raw data into the 'raw_data' dictionary
+    
+    sum_natural_f = sum_natural_f + forecast.abs().mean()
+    natural_f = sum_natural_f / len(stock_list)
+    f_scalar = 10 / natural_f
+    
+
+
+# check raw ( how many time it cross vs forecast)
+# plot to see the different or pattern
+# continue in google sheet
+
+
+# 1) simulate raw forecast across stocks
+plt.figure(figsize=(14,7))
+for stock in stock_list:
+    raw_data[stock + "_raw"].plot(label = stock)
+plt.axhline(0, color = 'red')
+plt.title("Raw data given different instrument")
+plt.xlabel("Date")
+plt.ylabel("raw data")
+plt.legend()
+plt.show()
+
+zero_crossings = {}
+for stock in stock_list:
+    # Subtract shifted series from original series and check sign (True if positive)
+    sign_changes = np.sign(raw_data[stock + "_raw"]).diff().abs() > 0 
+
+    # Count sign changes, indicating a zero crossing
+    zero_crossings[stock] = sign_changes.sum()
+
+print(zero_crossings)
+sum(zero_crossings.values()) / len(zero_crossings.values())
+
+plt.bar(zero_crossings.keys(), zero_crossings.values())
+plt.xticks(rotation=90) # to make the x-axis labels vertical for better visibility
+plt.show()
 
 
 
+# 2) simulate Vol.adj crossover across stocks
+plt.figure(figsize=(14,7))
+for stock in stock_list:
+    forecasts[stock + "_forecast"].plot(label = stock)
+plt.axhline(0, color = 'red')
+plt.title("Vol.adj crossover given different instrument")
+plt.xlabel("Date")
+plt.ylabel("Vol.adj crossover")
+plt.legend()
+plt.show()
+
+
+zero_crossings_n = {}
+for stock in stock_list:
+    # Subtract shifted series from original series and check sign (True if positive)
+    sign_changes = np.sign(forecasts[stock + "_forecast"]).diff().abs() > 0 
+
+    # Count sign changes, indicating a zero crossing
+    zero_crossings_n[stock] = sign_changes.sum()
+
+print(zero_crossings_n)
+sum(zero_crossings_n.values()) / len(zero_crossings_n.values())
+
+
+plt.bar(zero_crossings_n.keys(), zero_crossings_n.values())
+plt.xticks(rotation=90) # to make the x-axis labels vertical for better visibility
+plt.show()
 
 
 
+# 3) simulate finalized forecast across stocks
+plt.figure(figsize=(14,7))
+for stock in stock_list:
+    (forecasts[stock + "_forecast"]*f_scalar).plot(label = stock)
+plt.axhline(0, color = 'red')
+plt.title("finialized forecast crossover given different instrument")
+plt.xlabel("Date")
+plt.ylabel("fianalized f")
+plt.legend()
+plt.show()
 
 
+
+'''
+? how to add or reduce position according to forecast ?
+= 25% different in weight
+? how to determine whether it it help vs binary ?
+= sharp r. 
+'''
 
 
 

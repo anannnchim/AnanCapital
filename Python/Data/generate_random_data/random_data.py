@@ -69,4 +69,10 @@ def generate_trendy_price(Nlength: int, Tlength: int, Xamplitude: float, Volscal
     return combined_price
 
 
+# generate data
+'''
+# sample data
+sample_data = pd.Series([1,2,3])
+sample_data.index = pd.date_range(start = "2023-06-05", periods = len(sample_data))
+'''
 

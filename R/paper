@@ -1,0 +1,19 @@
+# Trading environment in R
+
+## data type
+1. data.frame
+2. numeric
+3. character
+4. xts, zoo
+
+## Object
+
+stock_data 
+signal
+forecast
+hold
+indicator
+portfolio_data
+
+
+
