@@ -8,6 +8,12 @@
 import pandas as pd
 import datetime
 import yfinance as yf
+import sys
+
+# get random data
+sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Data/generate_random_data")
+from random_data import arbitrary_timeseries
+from random_data import generate_trendy_price
 
 
 def calc_ewmac_turnover(stock_data, Lfast, Lslow=None):
@@ -109,12 +115,12 @@ def simulate_sma_turnover_with_fdata(window_fast, window_slow, Tlength):
     avg_holding_period = calc_holding_period(fake_data, sma_f, sma_s) / calc_ewmac_turnover(fake_data, sma_f,sma_s)
     turnover = calc_ewmac_turnover(fake_data, sma_f,sma_s)
     holding_period = calc_holding_period(fake_data, sma_f, sma_s)
-    trades_per_year = turnover / 4
+    turnover_per_year = turnover / 4
 
     # Collect data in a dictionary
     data = {
         'Avg. holding period': [avg_holding_period],
-        'Trades/year': [trades_per_year]
+        'Turnover per year ': [turnover_per_year]
     }
 
     # Convert the dictionary to a dataframe

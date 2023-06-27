@@ -8,6 +8,7 @@
 import sys
 import yfinance as yf
 import pandas as pd
+import numpy as np
 
 sys.path.append('/Users/nanthawat/Desktop/Python/pysystemtrade')
 from sysquant.estimators.vol import robust_vol_calc
@@ -23,7 +24,7 @@ def calc_ewmac_forecast(price, Lfast, Lslow=None):
     ## We can't use the price of the contract we're trading, or the volatility will be jumpy
     ## And we'll miss out on the rolldown. See https://qoppac.blogspot.com/2015/05/systems-building-futures-rolling.html
 
-    price = price.resample("1B").last()
+   # price = price.resample("1B").last()
     if Lslow is None:
         Lslow = 4 * Lfast
 
@@ -37,8 +38,9 @@ def calc_ewmac_forecast(price, Lfast, Lslow=None):
 
     return raw_ewmac / vol
 
-# # # pending 
-def calc_ewmac_forecast_fake(price, Lfast, Lslow=None):
+
+
+def calc_volatility_fdata(price, Lfast, Lslow=None):
     """
     Calculate the ewmac trading rule forecast, given a price and EWMA speeds Lfast, Lslow and vol_lookback
 
@@ -47,7 +49,7 @@ def calc_ewmac_forecast_fake(price, Lfast, Lslow=None):
     ## We can't use the price of the contract we're trading, or the volatility will be jumpy
     ## And we'll miss out on the rolldown. See https://qoppac.blogspot.com/2015/05/systems-building-futures-rolling.html
 
-    price = price.resample("1B").last()
+   # price = price.resample("1B").last()
     if Lslow is None:
         Lslow = 4 * Lfast
 
@@ -57,10 +59,9 @@ def calc_ewmac_forecast_fake(price, Lfast, Lslow=None):
     slow_ewma = price.ewm(span=Lslow).mean()
     raw_ewmac = fast_ewma - slow_ewma
     
-    # vol = robust_vol_calc(price.diff())
-
-    return raw_ewmac # / vol
-
+    volatility = np.sqrt(((price - price.shift(1))**2).ewm(span = 36).mean())
+    
+    return volatility   #/ vol
 
 
 
@@ -84,10 +85,12 @@ def calc_sma_forecast(stock_data, Lfast, Lslow=None):
     
     raw_sma = sma_f - sma_s
     
+    vol = robust_vol_calc(stock_data.diff())
     
-    return raw_sma
+    return raw_sma / vol
 
 
+# need to adjust
 
 def create_stock_df(stock_symbol, start_date, end_date, window_fast, window_slow):
     # Download stock data
@@ -97,7 +100,7 @@ def create_stock_df(stock_symbol, start_date, end_date, window_fast, window_slow
     sma_f = stock_data.rolling(window = window_fast).mean()
     sma_s = stock_data.rolling(window = window_slow).mean()
 
-    # Calculate forecast
+    # Calculate forecast ? 
     forecast = calc_sma_forecast(stock_data, window_fast, window_slow)
 
     # Calculate hold series

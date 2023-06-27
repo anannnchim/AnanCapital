@@ -19,6 +19,8 @@ import datetime
 # get indicator
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Indicator")
 from indicators import calc_ewmac_forecast # calc_ewmac_forecast
+from indicators import calc_volatility_fdata
+
 # from indicators import calc_ewmac_forecast_fake # calc_ewmac_forecast_fake: not working
 
 # get random data
@@ -39,17 +41,18 @@ from system_performance import get_sharp_ratio
 from system_performance import compute_sharp_ratio
 from system_performance import calculate_sharp_ratio
 from system_performance import calculate_sharp_ratio_fdata
+from system_performance import get_geo_sharp_ratio
+from system_performance import get_cumulative_return
 
 # clean data
 sys.path.append("/Users/nanthawat/Documents/GitHub/AnanCapital/Python/Data/data_prep")
 from clean_data import check_invalid_dataframe
 
  
-''' -------------3. Generate plot for fake data: does it make sense ------------------------ ''' 
-
+''' ------------- 1) Generate plot for fake data: does it make sense ------------------------ ''' 
 
 # fake_data
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1024, Tlength=50, Xamplitude=100, Volscale=0.0)) # fake_data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1024, Tlength=66, Xamplitude=100, Volscale=0.0)) # fake_data
 
 # add date_time
 fake_data.index = pd.date_range(start = "2000-01-01", periods = len(fake_data))
@@ -66,6 +69,7 @@ for i in range(1, len(sma_s)):
     else:
         hold.at[i] = 0
 
+# plot
 fig, axs = plt.subplots(2,1,figsize = (8,6))
 axs[0].plot( fake_data, label = "Close")
 axs[0].plot(sma_f, label = "sma_f")
@@ -79,24 +83,26 @@ axs[1].set_title('Close')
 plt.tight_layout()
 plt.show()
 
+# data
 avg_holding_period = calc_holding_period(fake_data, sma_f, sma_s) /  calc_ewmac_turnover(fake_data, sma_f,sma_s)
 turnover =  calc_ewmac_turnover(fake_data, sma_f,sma_s)
 holding_period = calc_holding_period(fake_data, sma_f, sma_s)
 turnover_per_year = turnover / 4
 
+# print 
 print(f'Holding period: {holding_period}')
 print(f'Turnover: {turnover}')
 print(f'Avg.holding period: {avg_holding_period}')
 print(f'turnover per year: {turnover_per_year}')
 
-''' 4. Check turnover for fake_data given a pair of moving average'''
+# using function 
+simulate_sma_turnover_with_fdata(32,128,66)
 
-simulate_sma_turnover_with_fdata(32,128,50)
+''' -------- 2) Simulate turnover for fake_data given a pair of moving average ------------------------ ''' 
 
-# Run
-Tlength = [5, 21, 64, 128, 256]
+Tlength = [5, 21, 64, 128, 256] 
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
-# pairs = [(64, 256), (85, 256), (128, 256)]
+
 dataframes = []
 
 # iterate over all pairs
@@ -162,7 +168,7 @@ Result: fake data
 0           116.666667         0.75  Pair_6      256 # <<<
 
 
-# Result: Real data
+# Result: Real data ? what data? 
 Pair           Avg. holding period  Trades/year  turnover  holding
 (2, 8)                6.401865    20.431629     389.6   2493.0                                                          
 (4, 16)              13.321197    10.069698     192.0   2557.2
@@ -172,8 +178,7 @@ Pair           Avg. holding period  Trades/year  turnover  holding
 (64, 256)           250.340280     0.588288      11.2   2786.6
 
 '''
-''' -------------------------------------------------------------------------------- ''' 
-''' 6. Check turnover for real data given a pair of moving average'''
+''' -------- 3) Check turnover for real data given a pair of moving average ------------------------ ''' 
 
 # Calculate date 20 years ago
 start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
@@ -221,28 +226,45 @@ print(f'trade/year: {trades_per_year}')
 print(f'Turnover: {turnover}')
 print(f'Holding period: {holding_period}')
 
-# Run simulate
+''' -------- 4) Simulate turnover for real data given a pair of moving average ------------------------ ''' 
 
 # stocks
 symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK"]
 
 # ETFs
 symbol_list = ["XLF","EWJ","ARKG","EMB", "TIP","VNQ", "GLD"]
-# pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
-pairs = [(64, 256), (85, 256), (128, 256)]
-pairs = [ (32, 128), (64, 128), (50, 150)]
- 
-''' Thai stock 
+
+# ETFs 
+file_path = '/Users/nanthawat/Desktop/universe.csv'
+df = pd.read_csv(file_path)
+symbol_list = df["STOCK"].tolist()
+symbol_list = symbol_list[1:]
+
+# pairs
+pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
+
+# Simulate
+result = pd.DataFrame()
+for symbol in symbol_list:
+    outcome = simulate_sma_turnover_with_rdata(symbol, 32, 128)
+    result = result.append(outcome)
+
+# summary    
+result.mean() 
+
+# plot 
+result.iloc[:,0].plot(kind = 'box')
+result.iloc[:,1].plot(kind = 'box')
+
+''' 
+# Thai stock 
 Pair           Avg. holding period  Trades/year  turnover  holding
 (2, 8)                6.401865    20.431629     389.6   2493.0                                                          
 (4, 16)              13.321197    10.069698     192.0   2557.2
 (8, 32)              28.625636     4.791888      91.4   2609.4
-
 (16, 64)             53.937053     2.569563      49.0   2634.8 <<< capture Medium
 (32, 128)           125.654967     1.111587      21.2   2627.6 <<< capture Long
 (64, 256)           250.340280     0.588288      11.2   2786.6 <<< capture Long
-
-
 
 # Check variation of pair 16:64 >> same
           Avg. holding period  Trades/year  turnover  holding
@@ -253,23 +275,19 @@ Pair
 
 
 # Check variation of pair 64:256 >> same
-
+- Thai stocks
             Avg. holding period  Trades/year  turnover  holding
 Pair                                                           
 (64, 256)            250.340280     0.588288      11.2   2786.6
 (85, 256)            285.935556     0.515017       9.8   2784.8
 (128, 256)           258.671779     0.566625      10.8   2752.4
 
-
-'' ETFs: same 
+- ETFs
 Pair            Avg. holding period  Trades/year  turnover      holding
                                                               
 (64, 256)            259.699206     0.566351  9.714286  2430.000000
 (85, 256)            293.906502     0.502315  8.714286  2436.428571
 (128, 256)           329.023535     0.468272  8.285714  2430.571429
-
-
-* each stock has a consistent result. 
 
 Summary:
     1. choice of {1/4, 1/3, 1/4} give the same expected holding and turnover
@@ -277,22 +295,23 @@ Summary:
     -  pair (32,128) capture 6 month trend or avg.holding at 125 
     -  pair (64,256) capture 1 year trend or avg.holding at 250
     3. fake data give similar properties as real data 
+    4. each stock has a consistent result. 
 '''
 
-''' -------------------------------------------------------------------------------- ''' 
+''' -------- 5) Compute Sharp Ratio for fake data ------------------------ ''' 
 
-''' 6. Compute Sharp Ratio '''
-
-# stock data
-start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
-stock_data = yf.download("AOT.BK", start=start_date)
-stock_data = stock_data["Close"]
-
-
-''' Compute sharp for fake data '''  
+'''
+    strategy: ewma (32,128) long only
+    position sizing: binary 100% 
+    execution: lag 1 day  
+    
+'''
 
 # fake data
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=125, Xamplitude=100, Volscale=0.0)) # fake_data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.1)) # fake_data
+# add date
+date_range = pd.date_range(start='1/1/2020', periods=1000) # Change start date and periods as needed
+fake_data.index = date_range
 stock_data = fake_data.to_frame()
 stock_data.columns = ['Close'] 
 
@@ -303,93 +322,118 @@ window_slow = 128
 sma_f = stock_data.rolling(window = window_fast).mean()
 sma_s = stock_data.rolling(window = window_slow).mean()
 
-# forecast  <<< adjust
-forecast = sma_f - sma_s
-
-# holding  <<< adjust
-hold = (forecast >= 0).astype(int)
-
-# daily return
-daily_return = get_daily_return(stock_data) 
-cumulative_daily_return = (1 + daily_return).cumprod() - 1
-
-# system performance
-system_return = daily_return * hold.shift(1)
-
-# cum_return 
-system_cum_return = (1 + system_return).cumprod() - 1
-
-# Convert Series to DataFrame
-# df = stock_data.to_frame()
+# data prep
 df = pd.DataFrame()
-df = df.assign(sma_f = sma_f,
+df = df.assign(Close = stock_data,
+               sma_f = sma_f,
                sma_s = sma_s,
-               forecast = forecast,
-               hold = hold,
-               daily_return = daily_return,
-               system_return = system_return,
-               cumulative_daily_return = cumulative_daily_return,
-               system_cum_return = system_cum_return) 
+               forecast = (sma_f-sma_s) / calc_volatility_fdata(stock_data,32,128))
 
-# rename heading
-df.rename(columns = {df.columns[0]: 'Close'}, inplace = True)
+# assign hold
+hold = [1 if x > 0 else 0 for x in df['forecast']] 
+df = df.assign(hold = hold)
+df['hold'] = df['hold'].shift(5) # lag 1 day ? need to check lag 1 week
 
-# fill all NaN with first element
-df = df.fillna(method='bfill').fillna(method='ffill')
+# daily return of stock
+df['daily_return'] = get_daily_return(stock_data)
+df['equity_daily_return'] = get_cumulative_return(df['daily_return'])
 
-# calculate sharp Ratio
-original_sharp = compute_sharp_ratio(daily_return)
-new_sharp = compute_sharp_ratio(system_return)
-print(f"original: {original_sharp}")
-print(f"new: {new_sharp}")
+# system return
+df['system_return'] = df['hold'] * df['daily_return']
+df['equity_curve'] = get_cumulative_return(df['system_return'])
+
+# print shapr Ratio
+print(f'original sharp:{get_geo_sharp_ratio(stock_data)}')
+print(f"system sharp: {get_geo_sharp_ratio(df['equity_curve'])}")
+
+# plot equity curve
+df[["equity_daily_return", "equity_curve"]].plot()
+
+# boxplot return
+df[["daily_return", "system_return"]].plot(kind = 'box')
 
 # plot
-fig, axs = plt.subplots(5,1,figsize = (8,6))
-
+fig, axs = plt.subplots(5,1,figsize = (8,30))  # Create 5 rows of subplots
 axs[0].set_title('Close')
-axs[0].plot( df["Close"], label = "Close")
+axs[0].plot(df["Close"], label = "Close")
 axs[0].plot(df["sma_f"], label = "sma_f")
 axs[0].plot(df["sma_s"], label = "sma_s")
-
-
 axs[1].set_title('Forecast')
 axs[1].plot(df["forecast"], label = "Forecast")
 axs[1].axhline(y = 0, color = 'red', linestyle = "--")
-
 axs[2].set_title('Hold')
 axs[2].plot(df["hold"], label = "sma_s")
-
-axs[3].set_title('cumulative_daily_return')
-axs[3].plot(df["cumulative_daily_return"] , label = "cumulative_daily_return")
-
-axs[4].set_title('system_cum_return')
-axs[4].plot(df['system_cum_return'] , label = "system_cum_return")
-
+axs[3].set_title('equity_daily_return')
+axs[3].plot(df["equity_daily_return"] , label = "equity_daily_return")
+axs[4].set_title('equity_curve')
+axs[4].plot(df['equity_curve'] , label = "equity_curve")
 plt.tight_layout()
 plt.show()
 
+ 
+''' Check lag of execution (32,128)
 
-# compute sharp Ratio using function
-window_fast = 32
-window_slow = 128
-Tlength = 125
-Volscale = 0.15
+Trend Length = 125
+
+    TEST 1:
+
+            orignal =  0.023
+    Lag 1:  system  =  0.021 [Lower] 
+    Lag 5:  system  =  0.107 [Better] <<
+    Lag 10: system  =  0.177 [Better] << 
+    Lag 15: system  = -0.095 [Lower]
+    Lag 20: system  = -0.126 [Lower] 
+    
+    TEST 2:
+        
+            orignal = -0.008
+    Lag 1:  system  = -0.030 [Lower]
+    Lag 5:  system  =  0.065 [Better] <<
+    Lag 10: system  = -0.003 [Better] <<
+    Lag 15: system  = -0.036 [Lower]
+    Lag 20: system  = -0.074 [Lower]
+    
+    
+Trend Length = 256
+
+    TEST 1:
+            orignal = -0.032
+    Lag 1:  system  =  0.221 [Better] << 
+    Lag 5:  system  =  0.204 [Better] <<
+    Lag 10: system  =  0.077 [Better] 
+    Lag 15: system  =  0.170 [Better]
+    Lag 20: system  =  0.193 [Better]
+    
+    
+    TEST 2:
+            orignal =  0.021
+    Lag 1:  system  =  0.135 [Better] << 
+    Lag 5:  system  =  0.148 [Better] <<
+    Lag 10: system  =  0.077 [Better] 
+    Lag 15: system  =  0.097 [Better]
+    Lag 20: system  =  0.139 [Better]
+
+*** Summary:
+    
+    1. for 6 month to LT-Trend, lag 1 and lag 5 are good. 
+
+'''
+# compute single 
+
+window_fast = 64
+window_slow = 256
+Tlength = 256
+Volscale = 0.1
 
 calculate_sharp_ratio_fdata(Tlength,Volscale, window_fast,window_slow)
 
+''' -------- 6) Simulate Sharp Ratio for fake data  ------------------------ ''' 
+
+# Simulate Sharp Ratio
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
 trend_length = [5, 21, 64, 128, 256]
 
 sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  0.15, pair[0], pair[1]) for TLength in trend_length] for pair in pairs}
-
-# simulate sharp of fake data
-pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
-
-pairs = [ (32, 128)]
-trend_length = [5, 21, 64, 128, 256]
-
-Volscale = 0
-
 
 sharp_ratios_by_pair = {}
 # Using dict and list comprehensions
@@ -414,26 +458,27 @@ plt.title('Mean Value for each Pair')
 plt.xticks(rotation=90) # This rotates the x-axis labels so they don't overlap
 plt.show()
 
-''' Simulate sharp ratio with real data. '''  
+
+
+''' -------- 6) Simulate sharp ratio with real data ------------------------ ''' 
+
+# stock data
+start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
+stock_data = yf.download("AOT.BK", start=start_date)
+stock_data = stock_data["Close"]
+
 # Compute Sharp Ratio for single real data
 calculate_sharp_ratio("XLF",i,128)
-
 
 # simulate variation of pair
 main = 128
 pair = [26, 38, 51, 64, 77, 90, 102, 115]
 for i in pair:
-    print( calculate_sharp_ratio("DELTA.BK", i, main))
+    print(calculate_sharp_ratio("DELTA.BK", i, main))
     
 
 # Simulate the result
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
-pairs = [ (32, 128), (64, 128), (50, 150)]
-
-# variation of (64,256)
-pairs = [(64, 256), (85, 256), (128, 256)]
-
-pairs = [(50, 200), (100, 200), (150, 200)]
 
 # RUN
 symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK",
