@@ -308,7 +308,7 @@ Summary:
 '''
 
 # fake data
-fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=256, Xamplitude=100, Volscale=0.1)) # fake_data
+fake_data = arbitrary_timeseries(generate_trendy_price(Nlength= 1000, Tlength=125, Xamplitude=100, Volscale=0)) # fake_data
 # add date
 date_range = pd.date_range(start='1/1/2020', periods=1000) # Change start date and periods as needed
 fake_data.index = date_range
@@ -316,9 +316,8 @@ stock_data = fake_data.to_frame()
 stock_data.columns = ['Close'] 
 
 # indicators
-stock_data
-window_fast = 32
-window_slow = 128
+window_fast = 64
+window_slow = 256
 sma_f = stock_data.rolling(window = window_fast).mean()
 sma_s = stock_data.rolling(window = window_slow).mean()
 
@@ -332,7 +331,7 @@ df = df.assign(Close = stock_data,
 # assign hold
 hold = [1 if x > 0 else 0 for x in df['forecast']] 
 df = df.assign(hold = hold)
-df['hold'] = df['hold'].shift(5) # lag 1 day ? need to check lag 1 week
+df['hold'] = df['hold'].shift(1) # lag 1 day ? need to check lag 1 week
 
 # daily return of stock
 df['daily_return'] = get_daily_return(stock_data)
@@ -419,25 +418,17 @@ Trend Length = 256
 
 '''
 # compute single 
-
-window_fast = 64
-window_slow = 256
-Tlength = 256
-Volscale = 0.1
-
-calculate_sharp_ratio_fdata(Tlength,Volscale, window_fast,window_slow)
+calculate_sharp_ratio_fdata(256, 0, 64, 256)
 
 ''' -------- 6) Simulate Sharp Ratio for fake data  ------------------------ ''' 
 
 # Simulate Sharp Ratio
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
 trend_length = [5, 21, 64, 128, 256]
+Volscale = 0
 
-sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  0.15, pair[0], pair[1]) for TLength in trend_length] for pair in pairs}
-
-sharp_ratios_by_pair = {}
 # Using dict and list comprehensions
-sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  0, pair[0], pair[1]) for TLength in trend_length] for pair in pairs}
+sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  Volscale, pair[0], pair[1]) for TLength in trend_length] for pair in pairs}
 df = pd.DataFrame(sharp_ratios_by_pair)
 
 # Transpose the DataFrame if you want each row to correspond to a pair
@@ -459,8 +450,7 @@ plt.xticks(rotation=90) # This rotates the x-axis labels so they don't overlap
 plt.show()
 
 
-
-''' -------- 6) Simulate sharp ratio with real data ------------------------ ''' 
+''' -------- 7) Simulate sharp ratio with real data ------------------------ ''' 
 
 # stock data
 start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
@@ -476,7 +466,6 @@ pair = [26, 38, 51, 64, 77, 90, 102, 115]
 for i in pair:
     print(calculate_sharp_ratio("DELTA.BK", i, main))
     
-
 # Simulate the result
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
 
