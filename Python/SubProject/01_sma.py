@@ -425,7 +425,7 @@ calculate_sharp_ratio_fdata(256, 0, 64, 256)
 # Simulate Sharp Ratio
 pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
 trend_length = [5, 21, 64, 128, 256]
-Volscale = 0
+Volscale = .14
 
 # Using dict and list comprehensions
 sharp_ratios_by_pair = {str(pair): [calculate_sharp_ratio_fdata(TLength,  Volscale, pair[0], pair[1]) for TLength in trend_length] for pair in pairs}
@@ -452,36 +452,137 @@ plt.show()
 
 ''' -------- 7) Simulate sharp ratio with real data ------------------------ ''' 
 
-# stock data
-start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
-stock_data = yf.download("AOT.BK", start=start_date)
-stock_data = stock_data["Close"]
+# compute Sharp Ratio for single real data
+calculate_sharp_ratio("AOT.BK",32,128)
 
-# Compute Sharp Ratio for single real data
-calculate_sharp_ratio("XLF",i,128)
 
-# simulate variation of pair
-main = 128
-pair = [26, 38, 51, 64, 77, 90, 102, 115]
-for i in pair:
-    print(calculate_sharp_ratio("DELTA.BK", i, main))
-    
-# Simulate the result
-pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
-
-# RUN
 symbol_list = ["AOT.BK","PTT.BK","SCC.BK","KBANK.BK", "DELTA.BK",
                "ADVANC.BK", "BANPU.BK", "BBL.BK", "BEM.BK", "BH.BK",
                "CENTEL.BK", "EA.BK", "GPSC.BK", "TRUE.BK", "TTB.BK"] # SET
 
-symbol_list = ["AOT.BK"]
- 
-# mean value 
-mean_values = {key: np.round(np.mean(val), 2) for key, val in sharp_ratios_by_pair.items()}
-mean_values
 
-median_values = {key: np.round(np.median(val), 2) for key, val in sharp_ratios_by_pair.items()}
-median_values
+# ETFs 
+file_path = '/Users/nanthawat/Desktop/universe.csv'
+df = pd.read_csv(file_path)
+symbol_list = df["STOCK"].tolist()
+symbol_list = symbol_list[1:]
+
+pairs = [(2, 8), (4, 16), (8, 32), (16, 64), (32, 128), (64, 256)]
+
+# Simulate
+sharp_ratios_by_pair = {}
+average_by_pair = {}
+
+for symbol in symbol_list:
+    for pair in pairs:
+        result = calculate_sharp_ratio(symbol, pair[0], pair[1])
+        key = symbol + "_" + str(pair)
+        sharp_ratios_by_pair[key] = result
+        
+        if pair not in average_by_pair:
+            average_by_pair[pair] = []
+        average_by_pair[pair].append(result)
+
+# Calculate the average for each pair
+for pair, values in average_by_pair.items():
+    average = sum(values) / len(values)
+    average_by_pair[pair] = average
+# Extract values for each pair
+values_by_pair = {}
+for pair_str, value in sharp_ratios_by_pair.items():
+    pair = eval(pair_str.split("_")[1])  # Convert string representation of pair to tuple
+    if pair not in values_by_pair:
+        values_by_pair[pair] = []
+    values_by_pair[pair].append(value)
+
+# Create a list of values for each pair
+data_list = list(values_by_pair.values())
+
+# Create a boxplot
+plt.boxplot(data_list, labels=[str(pair) for pair in values_by_pair.keys()])
+plt.xlabel("Pair")
+plt.ylabel("Value")
+plt.title("Boxplot of Values by Pair")
+plt.show()
+
+# Print the average values
+for pair, average in average_by_pair.items():
+    print(f"Pair {pair}: Average = {np.round(average,2)}")
+
+
+'''
+>>> Avg. sharp ratio before cost (Geo sharp)
+
+- Universe: SET
+
+    (lag 1)
+    Pair (2, 8): Average = 0.26
+    Pair (4, 16): Average = 0.34
+    Pair (8, 32): Average = 0.33
+    Pair (16, 64): Average = 0.33
+    Pair (32, 128): Average = 0.31
+    Pair (64, 256): Average = 0.27
+    
+- Universe ETFs
+
+    (lag 1)    
+    Pair (2, 8): Average = 0.05
+    Pair (4, 16): Average = 0.16
+    Pair (8, 32): Average = 0.21
+    Pair (16, 64): Average = 0.21
+    Pair (32, 128): Average = 0.25
+    Pair (64, 256): Average = 0.24
+    
+    (lag 5)    
+    Pair (2, 8): Average = 0.16
+    Pair (4, 16): Average = 0.22
+    Pair (8, 32): Average = 0.18
+    Pair (16, 64): Average = 0.12
+    Pair (32, 128): Average = 0.24
+    Pair (64, 256): Average = 0.23
+    
+    (lag 10)    
+    Pair (2, 8): Average = 0.12
+    Pair (4, 16): Average = 0.12
+    Pair (8, 32): Average = 0.06
+    Pair (16, 64): Average = 0.08
+    Pair (32, 128): Average = 0.26
+    Pair (64, 256): Average = 0.23
+    
+    (lag 15)
+    Pair (2, 8): Average = 0.27
+    Pair (4, 16): Average = 0.14
+    Pair (8, 32): Average = 0.04
+    Pair (16, 64): Average = 0.1
+    Pair (32, 128): Average = 0.25
+    Pair (64, 256): Average = 0.24
+    
+
+    
+*
+    
+# Sharp Ratio for real data:  
+    * Universe : 35 ETFs
+    * with Annual risk = 14% and return = 5%
+    * turnover/year 
+    * transaction cost = 0.01% (according to US ETFs from Rob excel)
+    * holding cost = 1.05% (management fee by ETF and by SA)
+    * lag 5
+    
+            Sharp R.   | Turnover | 1/3 Sharp.(limit)  || 
+    {'(2, 8)': 0.16,   | 20 | 0.048  || (20*0.01%) + (1.05%) = 1.25/14 = 0.09 [Exceed]
+     '(4, 16)': 0.22,  | 10 | 0.076 || 0.08  [Exceed]
+     '(8, 32)': 0.18,  |  5 | 0.054  || 0.08 [Exceed]
+     '(16, 64)': 0.12, |  3 | 0.036  || 0.08 [Exceed]
+     '(32, 128)': 0.24, | 1 | 0.079   || 0.08 [Pass] -> 0.16
+     '(64, 256)': 0.23} | 1 | 0.069  || 0.08 [Pass]
+    
+    *assume no exchange fee, custodian fee and no inside trading fund fee.
+    *lag 5 or 10 are not effect pair (32,128)
+    
+'''
+
+# Arith mean return 
 
 # ETFs Universe (35)
 ''' *Apply sma algo
@@ -536,7 +637,6 @@ median_values
  '(64, 256)': 0.15}
 '''
 
-# 1. apply cost limit 
 '''
 # Sharp Ratio for real data:  
     * Universe : 35 ETFs
@@ -550,7 +650,7 @@ median_values
      '(4, 16)': 0.20,  | 10 |  0.07 || 0.08*** exceed
      '(8, 32)': 0.27,  |  5 | 0.09  || 0.08 [Pass]
      '(16, 64)': 0.26, |  3 | 0.09  || 0.08 [Pass]
-     '(32, 128)': 0.30, | 1 | 0.1   || 0.08 [Pass]
+     '(32, 128)': 0.30, | 1 | 0.1   || 0.08 [Pass] ->> 0.3 -0.08 = 0.22
      '(64, 256)': 0.32} | 1 | 0.11  || 0.08 [Pass]
     
     *assume no exchange fee, custodian fee and no inside trading fund fee.
@@ -615,8 +715,6 @@ median_values
           '(64, 256)': 0.32} | 1 | 0.11  || 0.08 [Pass] ->> 0.24
         
          
-        
-         
          1. all sharp.after cost < original sharp. 
          2. choice of pair variation of {1/4, 1/3, 1/4} give the same sharp ratio
          3. Pair (2,8) and (4,16) are too expensive to trade.
@@ -639,9 +737,6 @@ median_values
          - try different fake data 
       
 """
-
-
-
 
 ''' 7. Compute forecast vs binary Sharp.ratio '''
 
@@ -787,7 +882,8 @@ plt.show()
 = sharp r. 
 '''
 
-
-
-
+# stock data
+start_date = datetime.datetime.now() - datetime.timedelta(days=10*365)
+stock_data = yf.download("XLF", start=start_date)
+stock_data = stock_data["Close"]
 

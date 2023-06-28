@@ -233,55 +233,36 @@ def calculate_sharp_ratio(symbol, window_fast, window_slow):
     # start_date = datetime.datetime.now() - datetime.timedelta(days=20*365)
 
     # Download the stock data
-    stock_data = yf.download(symbol, start="2000-04-05")
+    stock_data = yf.download(symbol, start="2005-01-01")
     stock_data = stock_data["Close"]
 
-    # Compute fast and slow simple moving averages (SMAs)
-    sma_f = stock_data.rolling(window = window_fast).mean()
-    sma_s = stock_data.rolling(window = window_slow).mean()
-
-    # Compute the forecast as the difference between fast and slow SMAs
-    forecast = sma_f - sma_s
+    # Calculate indicators
+    sma_f = stock_data.rolling(window=window_fast).mean()
+    sma_s = stock_data.rolling(window=window_slow).mean()
     
-    # If forecast is greater than or equal to 0, hold (buy) the stock
-    hold = (forecast >= 0).astype(int)
-
-    # Compute the daily return of the stock
-    daily_return = get_daily_return(stock_data)
+    # Data preparation
+    df = pd.DataFrame()
+    df = df.assign(Close=stock_data, sma_f=sma_f, sma_s=sma_s,
+                   forecast=(sma_f - sma_s) / calc_volatility_fdata(stock_data, window_fast, window_slow))
     
-    # Compute the cumulative daily return of the stock
-    cumulative_daily_return = (1 + daily_return).cumprod() - 1
-
-    # System return is the product of daily return and holding strategy
-    system_return = daily_return * hold.shift(1)
+    # Assign hold
+    hold = [1 if x > 0 else 0 for x in df['forecast']]
+    df = df.assign(hold=hold)
+    df['hold'] = df['hold'].shift(1)  # Lag 1 day - need to check lag 1 week
     
-    # Compute the cumulative system return
-    system_cum_return = (1 + system_return).cumprod() - 1
-
-    # Create a dataframe with all the computed series
-    df = stock_data.to_frame()
-    df = df.assign(sma_f = sma_f,
-                   sma_s = sma_s,
-                   forecast = forecast,
-                   hold = hold,
-                   daily_return = daily_return,
-                   system_return = system_return,
-                   cumulative_daily_return = cumulative_daily_return,
-                   system_cum_return = system_cum_return)
-
-    # Fill NaNs in the dataframe with the first non-NaN value in each column
-    df = df.fillna(method='bfill').fillna(method='ffill')
-
-    # Compute the sharp ratios using daily returns and system returns
-    original_sharp = compute_sharp_ratio(daily_return)
-    new_sharp = compute_sharp_ratio(system_return)
+    # Calculate daily return of stock
+    df['daily_return'] = get_daily_return(stock_data)
+    df['equity_daily_return'] = get_cumulative_return(df['daily_return'])
     
-    # modify
-    annual_return = np.mean(system_return)*256
-    annual_risk = np.std(system_return)*16
+    # Calculate system return
+    df['system_return'] = df['hold'] * df['daily_return']
+    df['equity_curve'] = get_cumulative_return(df['system_return'])
+    
+    sharp_ratio_original = get_geo_sharp_ratio(stock_data)
+    sharp_ratio = get_geo_sharp_ratio(df['equity_curve'] )
     
     # Return the computed sharp ratios
-    return new_sharp # new_sharp
+    return sharp_ratio # new_sharp
 
 
 
