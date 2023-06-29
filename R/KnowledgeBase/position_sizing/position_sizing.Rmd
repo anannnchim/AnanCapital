@@ -1,0 +1,209 @@
+---
+title: Position Sizing
+author:
+  - name: Nanthawat Anancharoenpakorn
+abstract:
+  - "Learn how to bet properly" 
+  - "**Motivation:** In investment, one of the decision we have to make is how much to bet"
+
+#boxedlist: # Not fully compatible with all document formats
+#  - First point
+#  - Second point
+competing_interests: |
+  There are no competing interest.
+author_contributions: |
+  AA did all the work. The others are just freeloaders.
+acknowledgements: |
+  This is an acknowledgement.
+
+  It consists of two paragraphs.
+
+bibliography: mybibfile.bib # Includes refs in OUP example template
+## When using `citation_package = "default"`, a CSL file can be used
+#csl: https://www.zotero.org/styles/oxford-university-press-note
+output:
+  rticles::oup_article:
+    oup_version: 1 # 1 = 2020 CTAN OUP CLS package; 0 = 2009 OUP CLS package
+    journal: "Journal Name"
+    document_style: "contemporary" # Can be contemporary, modern, traditional
+    papersize: "large" # Can be large, medium, small
+    #citation_package: "default" # Uncomment when using a CSL; default "natbib"
+    namedate: TRUE # Set FALSE to use numeric refs; Default FALSE
+    #number_sections: FALSE # Uncomment to not number sections; default TRUE
+    #number_lines: TRUE # Use `lineno` package - Default FALSE
+    #number_lines_options: ["mathlines","switch"]  # Options for latex lineno package.
+    #onecolumn: TRUE # Uncomment for one column format; default FALSE
+    extra_dependencies:
+      - booktabs # to use with knitr::kable() example below
+      
+## Example of pandoc's variable
+#urlcolor: orange
+#linkcolor: green
+#citecolor: red
+header-includes:
+  #- \usepackage[nomarkers,tablesfirst]{endfloat} # For figures and tables at end
+  - \theoremstyle{thmstyleone} # Theorem stuff from OUP template
+  - \newtheorem{theorem}{Theorem} #  meant for continuous numbers. %%\newtheorem{theorem}{Theorem}[section] # meant for sectionwise numbers. optional argument [theorem] produces theorem numbering sequence instead of independent numbers for Proposition
+  - \newtheorem{proposition}[theorem]{Proposition} # %%\newtheorem{proposition}{Proposition}" # to get separate numbers for theorem and proposition etc.
+  - \theoremstyle{thmstyletwo}
+  - \newtheorem{example}{Example}
+  - \newtheorem{remark}{Remark}
+  - \theoremstyle{thmstylethree}
+  - \newtheorem{definition}{Definition}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, # By default, hide code; set to TRUE to see code
+  fig.pos = 'th', # Places figures at top or here
+  out.width = '100%', dpi = 300, # Figure resolution and size
+  fig.env="figure"
+) # Latex figure environment
+
+options(knitr.table.format = "latex") # For kable tables to write LaTeX table directly
+```
+
+# Continuous Kelly Criterion
+
+The Kelly Criterion provides a way to calculate the optimal fraction of wealth to invest in each available opportunity to maximize the exponential rate of growth of the investor's wealth.
+
+1.  Input
+    -   $E$ : Expected return
+
+    -   $r$ : Risk free rate
+
+    -   $\sigma$ : Standard deviation of return
+2.   Formula
+        $$f^* = (E-r)/ \sigma^2$$
+3.  Output
+    -   $f^*$ : Optimal fraction of investment
+
+## Assumption
+
+1)  First point
+2)  Second point
+    -   Subpoint
+3)  
+
+A bullet list:
+
+-   First point
+-   Second point
+
+## Notes
+
+-   
+
+-   
+
+# A2 Intro
+
+Content
+
+# A3 Intro
+
+here is the example of equation
+
+$$
+E=mc^2
+$$
+
+An inline equation: $y=ax+b$
+
+An equation with a label for cross-referencing:
+
+```{=tex}
+\begin{equation}\label{eq:eq1}
+\int^{r_2}_0 F(r,\varphi){\rm d}r\,{\rm d}\varphi = 1
+\end{equation}
+```
+# A4 Intro
+
+The code below creates a figure. The code is included in the output because `echo=TRUE`.
+
+```{r fig1, fig.cap="This is the first figure.",echo=TRUE}
+plot(1:10,main="Some data",xlab="Distance (cm)",
+     ylab="Time (hours)")
+```
+
+You can reference this figure as follows: Fig. \ref{fig:fig1}.
+
+## Figures spanning two-columns
+
+Figures can span two columns be setting `fig.env="figure*"`.
+
+```{r fig2, fig.cap="This is a wide figure.",fig.env="figure*"}
+plot(1:5,pch=19,main="Some wide data",
+     xlab="Distance (cm)",ylab="Time (hours)")
+```
+
+Reference to second figure: Fig. \ref{fig:fig2}
+
+# A5 Intro
+
+## Generate a table using `xtable`
+
+```{r xtabletable, results="asis", echo=TRUE}
+df = data.frame(ID=1:3,code=letters[1:3])
+
+# Creates tables that follow OUP guidelines 
+# using xtable
+library(xtable) 
+print(xtable(df,caption="This is a xtable table.",
+             label="tab:tab1"),
+      comment=FALSE,caption.placement="top")
+```
+
+You can reference this table as follows: Table \ref{tab:tab1}.
+
+## Generate a table using `kable`
+
+```{r kabletable, echo=TRUE}
+df = data.frame(ID=1:3,code=letters[1:3])
+
+# kable can alse be used for creating tables
+knitr::kable(df,caption="This is a kable table.",
+             booktabs=TRUE,label="tab2")
+```
+
+You can reference this table as follows: Table \ref{tab:tab2}.
+
+## Table spanning two columns
+
+Tables can span two columns be setting `table.envir = "table*"` in `knitr::kable`.
+
+```{r widetable, echo=TRUE}
+df = data.frame(ID=1:3,code1=letters[1:3],
+                code2=letters[4:6],
+                code3=letters[7:9],
+                code4=letters[10:12],
+                code5=letters[13:15])
+
+# kable can alse be used for creating tables
+knitr::kable(df,caption="This is a wide kable table.",
+             #format="latex",
+             table.envir="table*",
+             booktabs=TRUE,label="tab3")
+```
+
+# Cross-referencing sections
+
+You can cross-reference sections and subsections as follows: Section \ref{literature-citations} and Section \ref{a-subsection}.
+
+***Note:*** the last section in the document will be used as the section title for the bibliography.
+
+For more portable and flexible referencing of sections, equations, figures and tables, use [`bookdown::pdf_document2`](https://github.com/rstudio/bookdown) with YAML header option `base_format: rticles::oup_article`.
+
+# A6 Intro
+
+::: {.appendices latex="true"}
+# Section title of first appendix
+
+blabla
+
+## Subsection title of first appendix
+
+and so on....
+:::
+
+# References
