@@ -879,6 +879,7 @@ plt.show()
 ? how to add or reduce position according to forecast ?
 = 25% different in weight
 ? how to determine whether it it help vs binary ?
+- Use binary fix. % volatility target 
 = sharp r. 
 '''
 
