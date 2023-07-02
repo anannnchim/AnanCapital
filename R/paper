@@ -16,4 +16,52 @@ indicator
 portfolio_data
 
 
+# variable base level 1
+return
+sd
+
+
+
+
+## Function name
+
+# return float (single value)
+calc_growth_rate
+calc_optimal_f
+
+
+
+
+# Core concept of trading / Investing
+
+https://macro-ops.com/the-3-pillars-of-trading-performance/
+Timeseries is a random process:
+
+1. Question is how to make money from random process?
+2. What are the main opponent?: Cost
+
+Process
+1. Have edges from non-random entry/exit
+- In trading, edge is your ability to select trades that perform better than random.
+- how to measure it. (risk adjusted Return)
+
+
+
+
+# Default value (CONSTANT)
+
+BUSINESS_DAY = 256
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -57,50 +57,89 @@ knitr::opts_chunk$set(
   echo = FALSE, # By default, hide code; set to TRUE to see code
   fig.pos = 'th', # Places figures at top or here
   out.width = '100%', dpi = 300, # Figure resolution and size
-  fig.env="figure"
+  fig.env="figure",
+  options(digits =  2)
 ) # Latex figure environment
 
 options(knitr.table.format = "latex") # For kable tables to write LaTeX table directly
 ```
 
-# Continuous Kelly Criterion
+# Kelly Criterion Concept
 
-The Kelly Criterion provides a way to calculate the optimal fraction of wealth to invest in each available opportunity to maximize the exponential rate of growth of the investor's wealth.
+The (Continuous) Kelly Criterion provides a way to calculate the optimal fraction of wealth to invest in each available opportunity to maximize the exponential rate of growth of the investor's wealth.
+
+-   To protect risk of ruin: equity go to zero.
+
+**Kelly function**
 
 1.  Input
-    -   $E$ : Expected return
 
-    -   $r$ : Risk free rate
+\- $E$ : excess mean return
 
-    -   $\sigma$ : Standard deviation of return
-2.   Formula
-        $$f^* = (E-r)/ \sigma^2$$
+\- $\sigma^2$ : variance return
+
+2.  Formula $$f^* = E/ \sigma^2$$
 3.  Output
-    -   $f^*$ : Optimal fraction of investment
+
+\- $f^*$ : Optimal fraction of investment
+
+**Maximum compounded growth rate**
+
+1.  Input
+
+\- $S$ sharp ratio of portfolio
+
+2.  Formula $$g = S^2 / 2$$
+3.  Output
+
+\- $g$ : long term growth rate (expected annual compound return)
 
 ## Assumption
 
-1)  First point
-2)  Second point
-    -   Subpoint
-3)  
+Order in restriction:
 
-A bullet list:
+1)  Future probability distribution of return is the same as the past. [All cases]
+2)  Future probability distribution of strategy's return is the same as the past.
+3)  Probability distribution of return of the strategy is Gaussian.
+4)  Central theme: leverage should keep constant.
 
--   First point
--   Second point
+## Practical Usage
 
-## Notes
+-   Use half-Kelly leverage or apply submaxomal compounded growth rate.
+-   Use it as an upper bound of leverage.
 
--   
+## Function
 
--   
+```{r, echo = TRUE}
+# Kelly Criterion function 
+calc_optimal_f = function(return, sd){
+  optimal_f = return / sd ^ 2
+  return(optimal_f)
+}
+```
 
-# A2 Intro
+```{r, echo = TRUE}
+# Compound growth rate
+calc_growth_rate = function(return, sd){
+  sharp_ratio = return / (sd ^ 2)
+  growth_rate =  (sharp_ratio ^ 2) / 2  
+  return(growth_rate)
+}
+```
 
-Content
+## Example
 
-# A3 Intro
+```{r,echo=TRUE}
+return = 0.1123
+risk = 0.1691
+paste("optimal f:" , round(calc_optimal_f(return,risk),2))
+
+```
+
+# Optimal allocation among strategies.
+
+```         
+```
 
 here is the example of equation
 
@@ -117,7 +156,12 @@ An equation with a label for cross-referencing:
 \int^{r_2}_0 F(r,\varphi){\rm d}r\,{\rm d}\varphi = 1
 \end{equation}
 ```
-# A4 Intro
+# Note
+
+1.  Kelly $f$ is independent of time scale: annual or daily share the same value
+2.  Sharp ratio is time scale dependent
+3.  Should include sharp after cost.
+4.  Risk free = 0
 
 The code below creates a figure. The code is included in the output because `echo=TRUE`.
 
