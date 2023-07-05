@@ -51,6 +51,7 @@ Process
 # Default value (CONSTANT)
 
 BUSINESS_DAY = 256
+Volatility calculation = exponential moving average 32
 
 
 
