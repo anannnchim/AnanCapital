@@ -3,7 +3,11 @@
 """
 Created on Sun Apr 30 10:29:39 2023
 
--> 01. Develop trading system using: fake data, sma crossover
+
+-> ETFs Trading system: Buy Sell Engine
+
+01. Develop trading system using: fake data, sma crossover
+
 """
 
 ''' ---------------------------------0. import library --------------------------------- ''' 
@@ -887,4 +891,24 @@ plt.show()
 start_date = datetime.datetime.now() - datetime.timedelta(days=10*365)
 stock_data = yf.download("XLF", start=start_date)
 stock_data = stock_data["Close"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

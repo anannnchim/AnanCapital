@@ -123,6 +123,38 @@ def get_sharp_ratio(stock_data):
 
 
 
+
+def get_annual_risk(stock_data):
+    '''
+    --------------------------
+    Calculate the Annualized Standard Deviation
+    - Assume: 
+        1) rate: rf = 0, rb = 0, annualized sharp.
+        2) number of date = 256 business day per year
+        3) sqrt(256) = 16
+    --------------------------
+    Input: 
+        stock_data {pd.Series, pd.DataFrame}   
+        
+    Output:
+        annual standard deviation (float) 
+    '''
+
+    
+    # Calculate daily returns
+    daily_returns = stock_data.pct_change(1)
+        
+    # if return contain inf then remove
+    daily_returns = daily_returns[~np.isinf(daily_returns)]
+
+    # Calculate average and standard deviation of daily returns
+    avg_return = daily_returns.mean()
+    std_return = daily_returns.std()
+
+    return (std_return * np.sqrt(256))
+
+
+
 def get_geo_sharp_ratio(stock_data):
     """
     Calculate the geometric Sharpe ratio for a given stock data.
